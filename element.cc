@@ -2,8 +2,16 @@
 #include <vector>
 #include <map>
 #include <random>
+#include <chrono>
+
+#define CHARGE_DECREASE 0.001
+#define CHARGE_THRESHOLD 64
 
 using namespace std;
+
+long long getNanos () {
+    return chrono::high_resolution_clock::now();
+}
 
 namechars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890"
 
@@ -14,34 +22,28 @@ public:
         for (int i = 0; i < 256; i++) {
             title += namechars[random () % 64];
         }
+        nanosAtLastUpdate = getNanos();
     }
 
 
     string title;
     map<string, int> outgoingConnections;
 
-    vector<bool> incomingConnections;
-    string connectionHandling;
+    int activeCharge = 0;
+    long long nanosAtLastUpdate
     string instructionSequence;
 
-    void update () {
-        // Parse connnectionHandling and put int all the values from incomingConnections
-    }
-
-    void execute () {
-        // Execute the instructionSequence attached
-    }
-
-    int addConnection (int ctype) {
-        if (ctype == 0) {
-            connectionHandling += "|" + incomingConnections.size; // OR
-        } else if (ctype == 1) {
-            connectionHandling += "&" + incomingConnections.size; // AND
-        } else if (ctype == 2) {
-            connectionHandling += "^" + incomingConnections.size; // UNLESS
+    void update (int addingCharge = 0) {
+        if (activeCharge > 0) {
+            activeCharge -= (getNanos()-nanosAtLastUpdate)*CHARGE_DECREASE;
         }
-        incomingConnections.push_back (false);
-        return incomingConnections.size-1;
+        if (activeCharge < 0) activeCharge = 0;
+        activeCharge += addingCharge;
+        if (activeCharge >= CHARGE_THRESHOLD) {
+            // TODO: execute
+            activeCharge -= CHARGE_THRESHOLD;
+        }
+        nanosAtLastUpdate = getNanos();
     }
 };
 
