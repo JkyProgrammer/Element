@@ -10,14 +10,14 @@
 using namespace std;
 
 long long getNanos () {
-    return chrono::high_resolution_clock::now();
+    return chrono::duration_cast<chrono::nanoseconds>(chrono::time_point_cast<chrono::nanoseconds>(chrono::high_resolution_clock::now()).time_since_epoch()).count();
 }
 
-namechars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890"
+char* namechars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890";
 
 class structure {
 public:
-    void structure () {
+    structure () {
         title = "";
         for (int i = 0; i < 256; i++) {
             title += namechars[random () % 64];
@@ -30,7 +30,7 @@ public:
     map<string, int> outgoingConnections;
 
     int activeCharge = 0;
-    long long nanosAtLastUpdate
+    long long nanosAtLastUpdate;
     string instructionSequence;
 
     void update (int addingCharge = 0) {
@@ -49,4 +49,5 @@ public:
 
 int main () {
     structure s = structure ();
+    cout << s.title << endl;
 }
