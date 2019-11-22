@@ -16,6 +16,11 @@ long long getNanos () {
 char* namechars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890";
 
 class structure {
+private:
+    void executeInstructions () {
+        
+        // TODO: Execute method
+    }
 public:
     structure () {
         title = "";
@@ -40,7 +45,7 @@ public:
         if (activeCharge < 0) activeCharge = 0;
         activeCharge += addingCharge;
         if (activeCharge >= CHARGE_THRESHOLD) {
-            // TODO: execute
+            executeInstructions();
             activeCharge -= CHARGE_THRESHOLD;
         }
         nanosAtLastUpdate = getNanos();
