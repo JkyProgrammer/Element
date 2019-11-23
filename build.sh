@@ -1,0 +1,1 @@
+g++ -o element element.cc -std=c++11
