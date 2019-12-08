@@ -109,6 +109,20 @@ public:
     }
 };
 
+class structurebuffer {
+    vector<structure> buffer;
+    vector<structure*> sensors;
+public:
+    structurebuffer () {
+
+    }
+
+    void addSensor (structure s) {
+        buffer.push_back (s);
+        sensors.push_back (&buffer[buffer.size()-1]);
+    }
+};
+
 int main () {
     structure s = structure ();
     cout << s.title << endl;
