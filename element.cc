@@ -127,3 +127,8 @@ int main () {
     structure s = structure ();
     cout << s.title << endl;
 }
+
+// TODO: Implement reading and writing systems
+// TODO: Write connection consolidation and alteration system
+// TODO: Write positive improvement system
+// TODO: Write IO effectors and sensors for computer
