@@ -89,6 +89,10 @@ public:
     
     string title; // Identifier for this structure
     vector<structure *> outgoingConnections; // List of outgoing connections to other structures
+    vector<int> connectionStrengths; // Outgoing connection strenghts
+    
+
+    
 
     int activeCharge; // Charge currently present in this structure
     long long nanosAtLastUpdate; // Used to calculate charge dropoff between updates
