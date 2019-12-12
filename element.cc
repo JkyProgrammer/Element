@@ -8,6 +8,7 @@
 
 #define CHARGE_DECREASE 0.001
 #define CHARGE_THRESHOLD 64
+#define CONNECTION_STRENGTH_DECREASE 1
 
 using namespace std;
 
@@ -90,9 +91,6 @@ public:
     string title; // Identifier for this structure
     vector<structure *> outgoingConnections; // List of outgoing connections to other structures
     vector<int> connectionStrengths; // Outgoing connection strenghts
-    
-
-    
 
     int activeCharge; // Charge currently present in this structure
     long long nanosAtLastUpdate; // Used to calculate charge dropoff between updates
@@ -110,6 +108,11 @@ public:
             activeCharge -= CHARGE_THRESHOLD;
         }
         nanosAtLastUpdate = getNanos();
+
+for (int i = 0; i < connectionStrengths.size(); i++) {
+connectionStrengths[i] = connectionStrengths[i] - (getNanos()-nanosAtLastUpdate)*CONNECTION_STRENGTH_DECREASE;
+// Remove if less rhan one TODO:
+}
     }
 };
 
