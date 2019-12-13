@@ -8,7 +8,7 @@
 
 #define CHARGE_DECREASE 0.001
 #define CHARGE_THRESHOLD 64
-#define CONNECTION_STRENGTH_DECREASE 1
+#define CONNECTION_STRENGTH_DECREASE 0.1
 
 using namespace std;
 
@@ -30,6 +30,8 @@ private:
 
         if (charge <= 0) return;
         if (chargee >= outgoingConnections.size()) return;
+
+        connectionStrengths[chargee] += 100;
         thread t = thread(&structure::update, ref (&outgoingConnections[chargee]), charge);
     }
 
@@ -38,16 +40,7 @@ private:
     // Interpret and execute a single instruction
     void executeInstruction (string instr) {
         // Split instruction into parts
-        vector<string> parts;
-        string tmp = "";
-        for (int i = 0; i < instr.length(); i++) {
-            if (instr[i] == '|') {
-                if (tmp.length() > 0) parts.push_back (tmp);
-                tmp = "";
-            } else {
-                tmp.push_back (instr[i]);
-            }
-        }
+        vector<string> parts = getInstructionParts (instr);
 
         string cmd = parts[0];
 
@@ -56,9 +49,7 @@ private:
         }
     }
 
-    // Iterate over the instructions in the instruction sequence and execute them all
-    void executeInstructions () {
-        // Split instructions
+    vector<string> getInstructions () {
         vector<string> queue;
         string tmp = "";
         for (int i = 0; i < instructionSequence.size(); i++) {
@@ -69,11 +60,59 @@ private:
                 tmp.push_back (instructionSequence[i]);
             }
         }
+
+        return queue;
+    }
+
+    vector<string> getInstructionParts (string instruction) {
+        vector<string> queue;
+        string tmp = "";
+        for (int i = 0; i < instruction.size(); i++) {
+            if (instruction[i] == '|') {
+                if (tmp.length() > 0) queue.push_back (tmp);
+                tmp = "";
+            } else {
+                tmp.push_back (instruction[i]);
+            }
+        }
+        if (tmp.length() > 0) queue.push_back (tmp);
+
+        return queue;
+    }
+
+    // Iterate over the instructions in the instruction sequence and execute them all
+    void executeInstructions () {
+        // Split instructions
+        vector<string> queue = getInstructions();
         
         // Iterate over instructions
         for (string instruction : queue) {
             executeInstruction (instruction);
         } 
+    }
+
+    void removeReferencesTo (int connNum) {
+        vector<string> instrs = getInstructions();
+        string newInstrs;
+        for (string instruction : instrs) {
+            vector<string> parts = getInstructionParts (instruction);
+            bool wantsRemoving = false;
+            for (string part : parts) if (stoi (part) == connNum) wantsRemoving = true;
+            if (!wantsRemoving) {
+                newInstrs += instruction + " ";
+            }
+        }
+        vector<structure *> newo;
+        vector<int> newc;
+        for (int i = 0; i < outgoingConnections.size(); i++) {
+            if (i != connNum) {
+                newo.push_back (outgoingConnections[i]);
+                newc.push_back (connectionStrengths[i]);
+            }
+        }
+
+        outgoingConnections = newo;
+        connectionStrengths = newc;
     }
 public:
 
@@ -98,6 +137,7 @@ public:
 
     // Incoming-only function which updates the charge of the node and executes the instruction sequence if needed
     void update (int addingCharge = 0) {
+        // Recalculate active charge
         if (activeCharge > 0) {
             activeCharge -= (getNanos()-nanosAtLastUpdate)*CHARGE_DECREASE;
         }
@@ -107,12 +147,18 @@ public:
             executeInstructions();
             activeCharge -= CHARGE_THRESHOLD;
         }
-        nanosAtLastUpdate = getNanos();
+        
+        // Update connnection strengths
+        for (int i = 0; i < connectionStrengths.size(); i++) {
+            connectionStrengths[i] = connectionStrengths[i] - (getNanos()-nanosAtLastUpdate)*CONNECTION_STRENGTH_DECREASE;
+            if (connectionStrengths[i] < 0) {
+                removeReferencesTo (i);
+                i--;
+            }
+        }
 
-for (int i = 0; i < connectionStrengths.size(); i++) {
-connectionStrengths[i] = connectionStrengths[i] - (getNanos()-nanosAtLastUpdate)*CONNECTION_STRENGTH_DECREASE;
-// Remove if less rhan one TODO:
-}
+        // ALWAYS LAST
+        nanosAtLastUpdate = getNanos();
     }
 };
 
@@ -136,6 +182,6 @@ int main () {
 }
 
 // TODO: Implement reading and writing systems
-// TODO: Write connection consolidation and alteration system
+// TODO: Write connection alteration system
 // TODO: Write positive improvement system
 // TODO: Write IO effectors and sensors for computer
