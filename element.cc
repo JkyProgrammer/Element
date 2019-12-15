@@ -138,11 +138,11 @@ void structure::update (int addingCharge) {
 }
 
 structurebuffer::structurebuffer (bool m) {
-    modifyOnUpdate = m;
+    modifyOnInput = m;
 }
 
 structurebuffer::structurebuffer (bool m, string path) {
-    modifyOnUpdate = m;
+    modifyOnInput = m;
 
     // TODO: Read in
 }
