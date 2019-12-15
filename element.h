@@ -53,10 +53,12 @@ public:
 class structurebuffer {
     vector<structure> buffer;
     vector<structure*> sensors;
-public:
-    structurebuffer ();
+    bool modifyOnInput;
 
-    structurebuffer (string path);
+public:
+    structurebuffer (bool m);
+
+    structurebuffer (bool m, string path);
 
     void addSensor (structure s);
 
