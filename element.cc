@@ -137,11 +137,13 @@ void structure::update (int addingCharge) {
     nanosAtLastUpdate = getNanos();
 }
 
-structurebuffer::structurebuffer () {
-
+structurebuffer::structurebuffer (bool m) {
+    modifyOnUpdate = m;
 }
 
-structurebuffer::structurebuffer (string path) {
+structurebuffer::structurebuffer (bool m, string path) {
+    modifyOnUpdate = m;
+
     // TODO: Read in
 }
 
