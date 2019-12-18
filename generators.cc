@@ -2,5 +2,5 @@
 
 structurebuffer setupForPC () {
     // TODO: PC setup
-    return;
+    return structurebuffer (true);
 }

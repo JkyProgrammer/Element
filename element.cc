@@ -35,7 +35,7 @@ void structure::i_charge (vector<string> cmdparts) {
 string makeInstruction (structure forStruct) {
     int r = random () % 2;
     if (r == 0) {
-        return "charge|" + (random() % forStruct.outgoingConnections.size());
+        return "charge|" + to_string(random() % forStruct.outgoingConnections.size());
     } else if (r == 1) {
         return "wait";
     }
@@ -71,19 +71,19 @@ vector<string> structure::getInstructions () {
     return queue;
 }
 
-void strucure::setInstructions (vector<string> v) {
+void structure::setInstructions (vector<string> v) {
     string s = "";
     vector<bool> encounteredConnections;
     for (int x = 0; x < outgoingConnections.size(); x++) encounteredConnections.push_back (false);
     for (int i = 0; i < v.size(); i++) {
         s += v[i] + " ";
-        vector<string> prts = getInstructionParts (instruction);
+        vector<string> prts = getInstructionParts (v[i]);
         if (prts[0] == "charge") {
-            encounteredConnnections[stoi (prts[1])] = true;
+            encounteredConnections[stoi (prts[1])] = true;
         }
     }
     instructionSequence = s;
-    for (int j = 0; j < encounteredConnections.size(); j++) if (!encounteredConnections[j]) removeReferecesTo (j);
+    for (int j = 0; j < encounteredConnections.size(); j++) if (!encounteredConnections[j]) removeReferencesTo (j);
 }
 
 vector<string> structure::getInstructionParts (string instruction) {
@@ -194,8 +194,7 @@ void structurebuffer::modify (int iterations) {
         // TODO: Randomly modify net
         int operation = random () % 3;
         int nodeIndex = random () % buffer.size();
-        switch (operation) {
-        case 0: // Change instructions
+        if (operation == 0) { // Change instructions
             int innerOperation = random () % 3;
             vector<string> instrs = buffer[nodeIndex].getInstructions ();
             if (innerOperation == 0) { // Modify
@@ -215,16 +214,11 @@ void structurebuffer::modify (int iterations) {
                 instrs = newI;
             }
             buffer[nodeIndex].setInstructions (instrs);
-            break;
-        case 1: // Change outgoing connections
-        // TODO:
-            break;
-        case 2: // Insert new node
-        // TODO: 
-            break;
-        default:
-            // Whoops
-            break;
+        } else if (operation == 1) { // Change outgoing connections
+            int innerOperationn = random () % 2;
+            // TODO: 
+        } else if (operation == 2) { // Insert new node
+            // TODO: 
         }
     }
 }

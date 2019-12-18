@@ -12,7 +12,6 @@ string namechars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ12345678
 
 long long getNanos ();
 int countOccurrences (char c, string s);
-string makeInstruction (structure forStruct);
 
 class structure {
 private:
@@ -73,6 +72,8 @@ public:
 
     void modify (int iterations);
 };
+
+string makeInstruction (structure forStruct);
 
 #define ELEMENT
 #endif
