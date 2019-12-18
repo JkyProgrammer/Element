@@ -83,7 +83,7 @@ void structure::setInstructions (vector<string> v) {
         }
     }
     instructionSequence = s;
-    for (int j = 0; j < encounteredConnections.size(); j++) if (!encounteredConnections[j]) removeReferencesTo (j);
+    for (int j = 0; j < encounteredConnections.size(); j++) if (!encounteredConnections[j]) removeConnection (j);
 }
 
 vector<string> structure::getInstructionParts (string instruction) {
@@ -112,13 +112,13 @@ void structure::executeInstructions () {
     } 
 }
 
-void structure::removeReferencesTo (int connNum) {
+void structure::removeConnection (int connNum) {
     vector<string> instrs = getInstructions();
     string newInstrs;
     for (string instruction : instrs) {
         vector<string> parts = getInstructionParts (instruction);
         bool wantsRemoving = false;
-        for (string part : parts) if (stoi (part) == connNum) wantsRemoving = true;
+        if (parts[0] == "charge" && stoi (parts[1]) == connNum) wantsRemoving = true;
         if (!wantsRemoving) {
             newInstrs += instruction + " ";
         }
@@ -161,7 +161,7 @@ void structure::update (int addingCharge) {
     for (int i = 0; i < connectionStrengths.size(); i++) {
         connectionStrengths[i] = connectionStrengths[i] - (getNanos()-nanosAtLastUpdate)*CONNECTION_STRENGTH_DECREASE;
         if (connectionStrengths[i] < 0) {
-            removeReferencesTo (i);
+            removeConnection (i);
             i--;
         }
     }
@@ -216,13 +216,16 @@ void structurebuffer::modify (int iterations) {
             buffer[nodeIndex].setInstructions (instrs);
         } else if (operation == 1) { // Change outgoing connections
             int innerOperation = random () % 2;
-            // TODO: Change connnection, or remove
+            if (innerOperation == 0) { // Change connection
+                buffer[nodeIndex].outgoingConnections[random() % buffer[nodeIndex].outgoingConnections.size()] = &(buffer[random() % buffer.size()]);
+            } else if (innerOperation == 1) { // Remove connection
+                buffer[nodeIndex].removeConnection (random() % buffer[nodeIndex].outgoingConnections.size());
+            }
         } else if (operation == 2) { // Insert new node
             // TODO: 
         }
     }
 }
-
 
 
 

@@ -30,8 +30,6 @@ private:
 
     // Iterate over the instructions in the instruction sequence and execute them all
     void executeInstructions ();
-
-    void removeReferencesTo (int connNum);
 public:
 
     // Constructor
@@ -49,10 +47,11 @@ public:
     // Incoming-only function which updates the charge of the node and executes the instruction sequence if needed
     void update (int addingCharge = 0);
 
+    void removeConnection (int connNum);
+
     vector<string> getInstructions ();
-
     void setInstructions (vector<string> v);
-
+    
     vector<string> getInstructionParts (string instruction);
 };
 
