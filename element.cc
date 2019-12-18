@@ -14,6 +14,12 @@ long long getNanos () {
     return chrono::duration_cast<chrono::nanoseconds>(chrono::time_point_cast<chrono::nanoseconds>(chrono::high_resolution_clock::now()).time_since_epoch()).count();
 }
 
+int countOccurrences (char c, string s) {
+    int n = 0;
+    for (int i = 0; i < s.size(); i++) if (s[i] == c) n++;
+    return n;
+}
+
 void structure::i_charge (vector<string> cmdparts) {
     if (cmdparts.size() < 3) return;
     int chargee = stoi (cmdparts[1]);
@@ -26,6 +32,16 @@ void structure::i_charge (vector<string> cmdparts) {
     thread t = thread(&structure::update, ref (&outgoingConnections[chargee]), charge);
 }
 
+string makeInstruction (structure forStruct) {
+    int r = random () % 2;
+    if (r == 0) {
+        return "charge|" + (random() % forStruct.outgoingConnections.size());
+    } else if (r == 1) {
+        return "wait";
+    }
+    return "";
+}
+
 
 void structure::executeInstruction (string instr) {
     // Split instruction into parts
@@ -35,6 +51,8 @@ void structure::executeInstruction (string instr) {
 
     if (cmd == "charge") {
         i_charge (parts);
+    } else if (cmd == "wait") {
+        i_wait ();
     }
 }
 
@@ -51,6 +69,21 @@ vector<string> structure::getInstructions () {
     }
 
     return queue;
+}
+
+void strucure::setInstructions (vector<string> v) {
+    string s = "";
+    vector<bool> encounteredConnections;
+    for (int x = 0; x < outgoingConnections.size(); x++) encounteredConnections.push_back (false);
+    for (int i = 0; i < v.size(); i++) {
+        s += v[i] + " ";
+        vector<string> prts = getInstructionParts (instruction);
+        if (prts[0] == "charge") {
+            encounteredConnnections[stoi (prts[1])] = true;
+        }
+    }
+    instructionSequence = s;
+    for (int j = 0; j < encounteredConnections.size(); j++) if (!encounteredConnections[j]) removeReferecesTo (j);
 }
 
 vector<string> structure::getInstructionParts (string instruction) {
@@ -159,6 +192,40 @@ void structurebuffer::writeOut (string path) {
 void structurebuffer::modify (int iterations) {
     for (int i = 0; i < iterations; i++) {
         // TODO: Randomly modify net
+        int operation = random () % 3;
+        int nodeIndex = random () % buffer.size();
+        switch (operation) {
+        case 0: // Change instructions
+            int innerOperation = random () % 3;
+            vector<string> instrs = buffer[nodeIndex].getInstructions ();
+            if (innerOperation == 0) { // Modify
+                instrs[random() % instrs.size()] = makeInstruction(buffer[nodeIndex]);
+            } else if (innerOperation == 1) { // Remove
+                vector<string> newI;
+                int remove = random () % instrs.size();
+                for (int n = 0; n < instrs.size(); n++) if (n != remove) newI.push_back (instrs[n]);
+                instrs = newI;
+            } else if (innerOperation == 2) { // Insert
+                vector<string> newI;
+                int add = random () % instrs.size();
+                for (int n = 0; n < instrs.size(); n++) { 
+                    newI.push_back (instrs[n]);
+                    if (n == add) newI.push_back (makeInstruction(buffer[nodeIndex]));
+                }
+                instrs = newI;
+            }
+            buffer[nodeIndex].setInstructions (instrs);
+            break;
+        case 1: // Change outgoing connections
+        // TODO:
+            break;
+        case 2: // Insert new node
+        // TODO: 
+            break;
+        default:
+            // Whoops
+            break;
+        }
     }
 }
 

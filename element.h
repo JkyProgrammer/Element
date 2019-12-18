@@ -11,6 +11,8 @@ using namespace std;
 string namechars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890";
 
 long long getNanos ();
+int countOccurrences (char c, string s);
+string makeInstruction (structure forStruct);
 
 class structure {
 private:
@@ -19,14 +21,13 @@ private:
     // Instruction : Charge : Send a charge impulse to another structure by calling its update method
     void i_charge (vector<string> cmdparts);
 
+    // Instruction : Wait : Delay for a short period of time
+    void i_wait ();
+
     // ===================================
 
     // Interpret and execute a single instruction
     void executeInstruction (string instr);
-
-    vector<string> getInstructions ();
-
-    vector<string> getInstructionParts (string instruction);
 
     // Iterate over the instructions in the instruction sequence and execute them all
     void executeInstructions ();
@@ -48,6 +49,12 @@ public:
 
     // Incoming-only function which updates the charge of the node and executes the instruction sequence if needed
     void update (int addingCharge = 0);
+
+    vector<string> getInstructions ();
+
+    void setInstructions (vector<string> v);
+
+    vector<string> getInstructionParts (string instruction);
 };
 
 class structurebuffer {
