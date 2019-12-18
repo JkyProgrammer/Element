@@ -215,8 +215,8 @@ void structurebuffer::modify (int iterations) {
             }
             buffer[nodeIndex].setInstructions (instrs);
         } else if (operation == 1) { // Change outgoing connections
-            int innerOperationn = random () % 2;
-            // TODO: 
+            int innerOperation = random () % 2;
+            // TODO: Change connnection, or remove
         } else if (operation == 2) { // Insert new node
             // TODO: 
         }
