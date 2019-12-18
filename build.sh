@@ -1,1 +1,1 @@
-g++ -o element element.cc -std=c++11
+g++ -o element element.cc element.h generators.cc -std=c++11

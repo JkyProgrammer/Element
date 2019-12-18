@@ -5,10 +5,11 @@
 #include <vector>
 #include <thread>
 
-#include "element.h"
-#include "generators.cc"
-
 using namespace std;
+
+#include "element.h"
+
+string namechars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890";
 
 long long getNanos () {
     return chrono::duration_cast<chrono::nanoseconds>(chrono::time_point_cast<chrono::nanoseconds>(chrono::high_resolution_clock::now()).time_since_epoch()).count();
@@ -29,13 +30,17 @@ void structure::i_charge (vector<string> cmdparts) {
     if (chargee >= outgoingConnections.size()) return;
 
     connectionStrengths[chargee] += 100;
-    thread t = thread(&structure::update, ref (&outgoingConnections[chargee]), charge);
+    thread t = thread(&structure::update, outgoingConnections[chargee], charge);
+}
+
+void structure::i_wait () {
+    this_thread::sleep_for (chrono::milliseconds(100));
 }
 
 string makeInstruction (structure forStruct) {
     int r = random () % 2;
     if (r == 0) {
-        return "charge|" + to_string(random() % forStruct.outgoingConnections.size());
+        return "charge|" + to_string(random() % forStruct.outgoingConnections.size()) + "|" + to_string((random() % 64) + 1);
     } else if (r == 1) {
         return "wait";
     }
@@ -61,13 +66,13 @@ vector<string> structure::getInstructions () {
     string tmp = "";
     for (int i = 0; i < instructionSequence.size(); i++) {
         if (instructionSequence[i] == ' ') {
-            if (tmp.length() > 0) queue.push_back (tmp);
+            if (tmp.size() > 0) queue.push_back (tmp);
             tmp = "";
         } else {
             tmp.push_back (instructionSequence[i]);
         }
     }
-
+    if (tmp.size() > 0) queue.push_back (tmp);
     return queue;
 }
 
@@ -103,16 +108,19 @@ vector<string> structure::getInstructionParts (string instruction) {
 }
 
 void structure::executeInstructions () {
+	cout << "Executing instructions on " << title << endl;
     // Split instructions
     vector<string> queue = getInstructions();
     
     // Iterate over instructions
     for (string instruction : queue) {
         executeInstruction (instruction);
-    } 
+    }
+    cout << "Execution of " << title << " finished successfully." << endl;
 }
 
 void structure::actuate () {
+	cout << title << " is actuating!" << endl;
     thread t = thread(actuationHandle, motorNum);
 }
 
@@ -143,13 +151,14 @@ void structure::removeConnection (int connNum) {
 structure::structure () {
     activeCharge = 0;
     title = "";
-    for (int i = 0; i < 256; i++) {
-        title += namechars[random () % 64];
+    for (int i = 0; i < 32; i++) {
+        title += namechars[random () % namechars.size()];
     }
     nanosAtLastUpdate = getNanos();
 }
 
 void structure::update (int addingCharge) {
+	cout << title << " is updating!" << endl;
     // Recalculate active charge
     if (activeCharge > 0) {
         activeCharge -= (getNanos()-nanosAtLastUpdate)*CHARGE_DECREASE;
@@ -165,7 +174,7 @@ void structure::update (int addingCharge) {
         activeCharge -= CHARGE_THRESHOLD;
     }
     
-    // Update connnection strengths
+    // Update connection strengths
     for (int i = 0; i < connectionStrengths.size(); i++) {
         connectionStrengths[i] = connectionStrengths[i] - (getNanos()-nanosAtLastUpdate)*CONNECTION_STRENGTH_DECREASE;
         if (connectionStrengths[i] < 0) {
@@ -188,18 +197,18 @@ structurebuffer::structurebuffer (bool m, string path) {
     // TODO: Read in
 }
 
-void structurebuffer::addSensor () {
-    buffer.push_back (structure());
-    sensors.push_back (&buffer[buffer.size()-1]);
+void structurebuffer::addSensor (structure *s) {
+    buffer.push_back (s);
+    sensors.push_back (s);
 }
 
 void structurebuffer::addMotor (void (*ah) (int)) {
-    structure s = structure();
-    s.isMotor = true;
-    s.motorNum = motors.size();
-    s.actuationHandle = ah;
+    structure *s = new structure();
+    s->isMotor = true;
+    s->motorNum = motors.size();
+    s->actuationHandle = ah;
     buffer.push_back (s);
-    motors.push_back (&buffer[buffer.size()-1]);
+    motors.push_back (s);
 }
 
 void structurebuffer::writeOut (string path) {
@@ -216,9 +225,9 @@ void structurebuffer::modify (int iterations) {
         int nodeIndex = random () % buffer.size();
         if (operation == 0) { // Change instructions
             int innerOperation = random () % 3;
-            vector<string> instrs = buffer[nodeIndex].getInstructions ();
+            vector<string> instrs = buffer[nodeIndex]->getInstructions ();
             if (innerOperation == 0) { // Modify
-                instrs[random() % instrs.size()] = makeInstruction(buffer[nodeIndex]);
+                instrs[random() % instrs.size()] = makeInstruction(*buffer[nodeIndex]);
             } else if (innerOperation == 1) { // Remove
                 vector<string> newI;
                 int remove = random () % instrs.size();
@@ -229,17 +238,17 @@ void structurebuffer::modify (int iterations) {
                 int add = random () % instrs.size();
                 for (int n = 0; n < instrs.size(); n++) { 
                     newI.push_back (instrs[n]);
-                    if (n == add) newI.push_back (makeInstruction(buffer[nodeIndex]));
+                    if (n == add) newI.push_back (makeInstruction(*buffer[nodeIndex]));
                 }
                 instrs = newI;
             }
-            buffer[nodeIndex].setInstructions (instrs);
+            buffer[nodeIndex]->setInstructions (instrs);
         } else if (operation == 1) { // Change outgoing connections
             int innerOperation = random () % 2;
             if (innerOperation == 0) { // Change connection
-                buffer[nodeIndex].outgoingConnections[random() % buffer[nodeIndex].outgoingConnections.size()] = &(buffer[random() % buffer.size()]);
+                buffer[nodeIndex]->outgoingConnections[random() % buffer[nodeIndex]->outgoingConnections.size()] = (buffer[random() % buffer.size()]);
             } else if (innerOperation == 1) { // Remove connection
-                buffer[nodeIndex].removeConnection (random() % buffer[nodeIndex].outgoingConnections.size());
+                buffer[nodeIndex]->removeConnection (random() % buffer[nodeIndex]->outgoingConnections.size());
             }
         } else if (operation == 2) { // Insert new node
             insertRandomNode ();
@@ -248,23 +257,28 @@ void structurebuffer::modify (int iterations) {
 }
 
 void motorTest (int i) {
-    cout << i << endl;
+	cout << "We did it!" << endl;
 }
 
 int main () {
     structurebuffer test = structurebuffer (true);
-    test.addSensor ();
-    test.addMotor (motorTest);
-    test.sensors[0]->outgoingConnections.push_back (test.motors[0]);
-    test.sensors[0]->connectionStrengths.push_back (100000);
 
-    string s;
-    while (true) {
-        cin >> s;
-        if (s == "go") test.sensors[0]->update (CHARGE_THRESHOLD);
-        s = "";
-    }
+    test.addMotor (motorTest);
+
+    structure *sensor = new structure ();
+    sensor->outgoingConnections.push_back (test.motors[0]);
+    sensor->connectionStrengths.push_back (100000);
+    sensor->instructionSequence = "charge|0|100";
+    test.addSensor (sensor);
+
+    cout << "Sensor: " << test.sensors[0]->title << endl;
+    
+    cout << "Motor: " << test.motors[0]->title << endl;
+
+    cout << "Commence test:" << endl << endl;
+    test.sensors[0]->update (1000);
     //mainloop_pc ();
 }
 
 // TODO: Write positive improvement system
+// TODO: Write new queueing system

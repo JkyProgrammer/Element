@@ -4,18 +4,17 @@
 using namespace std;
 
 #ifndef ELEMENT
+
 #define CHARGE_DECREASE 0.001
 #define CHARGE_THRESHOLD 64
 #define CONNECTION_STRENGTH_DECREASE 0.1
-
-string namechars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890";
 
 long long getNanos ();
 int countOccurrences (char c, string s);
 
 class structure {
 private:
-    // ====== Instruction Funcitons ======
+    // ====== Instruction Functions ======
 
     // Instruction : Charge : Send a charge impulse to another structure by calling its update method
     void i_charge (vector<string> cmdparts);
@@ -65,7 +64,7 @@ class structurebuffer {
     bool modifyOnInput;
 
 public:
-    vector<structure> buffer;
+    vector<structure*> buffer;
     vector<structure*> sensors;
     vector<structure*> motors;
 
@@ -73,7 +72,7 @@ public:
 
     structurebuffer (bool m, string path);
 
-    void addSensor ();
+    void addSensor (structure *s);
     void addMotor (void (*ah) (int));
 
     void writeOut (string path);

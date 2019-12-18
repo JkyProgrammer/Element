@@ -6,7 +6,7 @@ void handle_pc (int i) {
 
 int mainloop_pc () {
     structurebuffer pcsb = structurebuffer (true);
-    for (int i = 0; i < 5; i++) pcsb.addSensor ();
+    for (int i = 0; i < 5; i++) pcsb.addSensor (new structure());
     for (int j = 0; j < 5; j++) pcsb.addMotor (handle_pc);
 
 
