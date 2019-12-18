@@ -112,6 +112,10 @@ void structure::executeInstructions () {
     } 
 }
 
+void structure::actuate () {
+    thread t = thread(actuationHandle, motorNum);
+}
+
 void structure::removeConnection (int connNum) {
     vector<string> instrs = getInstructions();
     string newInstrs;
@@ -153,7 +157,11 @@ void structure::update (int addingCharge) {
     if (activeCharge < 0) activeCharge = 0;
     activeCharge += addingCharge;
     if (activeCharge >= CHARGE_THRESHOLD) {
-        executeInstructions();
+        if (!isMotor) {
+            executeInstructions();
+        } else {
+            actuate ();
+        }
         activeCharge -= CHARGE_THRESHOLD;
     }
     
@@ -180,18 +188,30 @@ structurebuffer::structurebuffer (bool m, string path) {
     // TODO: Read in
 }
 
-void structurebuffer::addSensor (structure s) {
-    buffer.push_back (s);
+void structurebuffer::addSensor () {
+    buffer.push_back (structure());
     sensors.push_back (&buffer[buffer.size()-1]);
+}
+
+void structurebuffer::addMotor (void (*ah) (int)) {
+    structure s = structure();
+    s.isMotor = true;
+    s.motorNum = motors.size();
+    s.actuationHandle = ah;
+    buffer.push_back (s);
+    motors.push_back (&buffer[buffer.size()-1]);
 }
 
 void structurebuffer::writeOut (string path) {
     // TODO: Write out
 }
 
+void structurebuffer::insertRandomNode () {
+    // TODO: Insert random node
+}
+
 void structurebuffer::modify (int iterations) {
     for (int i = 0; i < iterations; i++) {
-        // TODO: Randomly modify net
         int operation = random () % 3;
         int nodeIndex = random () % buffer.size();
         if (operation == 0) { // Change instructions
@@ -222,15 +242,29 @@ void structurebuffer::modify (int iterations) {
                 buffer[nodeIndex].removeConnection (random() % buffer[nodeIndex].outgoingConnections.size());
             }
         } else if (operation == 2) { // Insert new node
-            // TODO: 
+            insertRandomNode ();
         }
     }
 }
 
-
+void motorTest (int i) {
+    cout << i << endl;
+}
 
 int main () {
-    structurebuffer sb = setupForPC ();
+    structurebuffer test = structurebuffer (true);
+    test.addSensor ();
+    test.addMotor (motorTest);
+    test.sensors[0]->outgoingConnections.push_back (test.motors[0]);
+    test.sensors[0]->connectionStrengths.push_back (100000);
+
+    string s;
+    while (true) {
+        cin >> s;
+        if (s == "go") test.sensors[0]->update (CHARGE_THRESHOLD);
+        s = "";
+    }
+    //mainloop_pc ();
 }
 
 // TODO: Write positive improvement system

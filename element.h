@@ -30,6 +30,8 @@ private:
 
     // Iterate over the instructions in the instruction sequence and execute them all
     void executeInstructions ();
+
+    void actuate ();
 public:
 
     // Constructor
@@ -53,23 +55,32 @@ public:
     void setInstructions (vector<string> v);
     
     vector<string> getInstructionParts (string instruction);
+
+    bool isMotor = false;
+    int motorNum = -1;
+    void (*actuationHandle) (int);
 };
 
 class structurebuffer {
-    vector<structure> buffer;
-    vector<structure*> sensors;
     bool modifyOnInput;
 
 public:
+    vector<structure> buffer;
+    vector<structure*> sensors;
+    vector<structure*> motors;
+
     structurebuffer (bool m);
 
     structurebuffer (bool m, string path);
 
-    void addSensor (structure s);
+    void addSensor ();
+    void addMotor (void (*ah) (int));
 
     void writeOut (string path);
 
     void modify (int iterations);
+
+    void insertRandomNode ();
 };
 
 string makeInstruction (structure forStruct);
