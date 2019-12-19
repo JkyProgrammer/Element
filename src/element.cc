@@ -21,6 +21,11 @@ int countOccurrences (char c, string s) {
     return n;
 }
 
+charge_i::charge_i (structure *s, int c) {
+	chargee = s;
+	charge = c;
+}
+
 void structure::i_charge (vector<string> cmdparts) {
     if (cmdparts.size() < 3) return;
     int chargee = stoi (cmdparts[1]);
@@ -30,7 +35,7 @@ void structure::i_charge (vector<string> cmdparts) {
     if (chargee >= outgoingConnections.size()) return;
 
     connectionStrengths[chargee] += 100;
-    thread t = thread(&structure::update, outgoingConnections[chargee], charge);
+    q->push (charge_i (outgoingConnections[chargee], charge));
 }
 
 void structure::i_wait () {
@@ -148,7 +153,8 @@ void structure::removeConnection (int connNum) {
     connectionStrengths = newc;
 }
 
-structure::structure () {
+structure::structure (actionqueue *queue) {
+	q = queue;
     activeCharge = 0;
     title = "";
     for (int i = 0; i < 32; i++) {
@@ -188,10 +194,12 @@ void structure::update (int addingCharge) {
 }
 
 structurebuffer::structurebuffer (bool m) {
+	q = new actionqueue ();
     modifyOnInput = m;
 }
 
 structurebuffer::structurebuffer (bool m, string path) {
+	q = new actionqueue ();
     modifyOnInput = m;
 
     // TODO: Read in
@@ -203,7 +211,7 @@ void structurebuffer::addSensor (structure *s) {
 }
 
 void structurebuffer::addMotor (void (*ah) (int)) {
-    structure *s = new structure();
+    structure *s = new structure(q);
     s->isMotor = true;
     s->motorNum = motors.size();
     s->actuationHandle = ah;
@@ -265,7 +273,7 @@ int main () {
 
     test.addMotor (motorTest);
 
-    structure *sensor = new structure ();
+    structure *sensor = new structure (test.q);
     sensor->outgoingConnections.push_back (test.motors[0]);
     sensor->connectionStrengths.push_back (100000);
     sensor->instructionSequence = "charge|0|100";
@@ -281,4 +289,3 @@ int main () {
 }
 
 // TODO: Write positive improvement system
-// TODO: Write new queueing system

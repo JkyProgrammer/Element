@@ -1,5 +1,8 @@
 #include <string>
 #include <vector>
+#include <queue>
+#include <thread>
+#include <mutex>
 
 using namespace std;
 
@@ -9,11 +12,18 @@ using namespace std;
 #define CHARGE_THRESHOLD 64
 #define CONNECTION_STRENGTH_DECREASE 0.1
 
+#define WORKER_THREADS_NUM 4
+#define WORKER_UPDATE_DELAY 20
+
 long long getNanos ();
 int countOccurrences (char c, string s);
 
+class actionqueue;
+
 class structure {
 private:
+	actionqueue *q;
+
     // ====== Instruction Functions ======
 
     // Instruction : Charge : Send a charge impulse to another structure by calling its update method
@@ -34,12 +44,12 @@ private:
 public:
 
     // Constructor
-    structure ();
+    structure (actionqueue *queue);
 
     
     string title; // Identifier for this structure
     vector<structure *> outgoingConnections; // List of outgoing connections to other structures
-    vector<int> connectionStrengths; // Outgoing connection strenghts
+    vector<int> connectionStrengths; // Outgoing connection strengths
 
     int activeCharge; // Charge currently present in this structure
     long long nanosAtLastUpdate; // Used to calculate charge dropoff between updates
@@ -60,10 +70,36 @@ public:
     void (*actuationHandle) (int);
 };
 
+class charge_i {
+public:
+	structure *chargee;
+	int charge;
+
+	charge_i (structure *s, int c);
+};
+
+class actionqueue {
+private:
+	queue<charge_i> queue;
+	vector<thread*> threads;
+
+public:
+	mutex m;
+	void push (charge_i c);
+
+	charge_i pop ();
+
+	actionqueue ();
+
+	actionqueue (actionqueue const& other);
+};
+
 class structurebuffer {
     bool modifyOnInput;
 
 public:
+    actionqueue *q;
+
     vector<structure*> buffer;
     vector<structure*> sensors;
     vector<structure*> motors;
