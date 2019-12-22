@@ -17,8 +17,8 @@ charge_i actionqueue::pop () {
 }
 
 actionqueue::actionqueue () {
-	for (int i = 0; i < WORKER_THREADS_NUM; i++) {
-		thread *t = new thread ([&] (actionqueue *q) {
+	for (int j = 0; j < WORKER_THREADS_NUM; j++) {
+		thread *t = new thread ([&] (actionqueue *q, int j) {
 			while (true) {
 				this_thread::sleep_for (chrono::milliseconds(WORKER_UPDATE_DELAY));
 				charge_i i = q->pop();
@@ -26,7 +26,7 @@ actionqueue::actionqueue () {
 					i.chargee->update(i.charge);
 				}
 			}
-		}, this);
+		}, this, j);
 		threads.push_back (t);
 	}
 }

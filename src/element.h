@@ -10,10 +10,11 @@ using namespace std;
 
 #define CHARGE_DECREASE 0.001
 #define CHARGE_THRESHOLD 64
-#define CONNECTION_STRENGTH_DECREASE 0.1
+#define CONNECTION_STRENGTH_DECREASE 0.00000000000001
+#define CONNECTION_STRENGTH_INCREASE 10000
 
 #define WORKER_THREADS_NUM 4
-#define WORKER_UPDATE_DELAY 20
+#define WORKER_UPDATE_DELAY 10
 
 long long getNanos ();
 int countOccurrences (char c, string s);

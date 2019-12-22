@@ -1,1 +1,2 @@
-g++ -o element element.cc element.h generators.cc -std=c++11
+g++ src/element.h src/queue.cc src/element.cc src/generators.cc -std=c++11
+mv a.out element

@@ -34,7 +34,8 @@ void structure::i_charge (vector<string> cmdparts) {
     if (charge <= 0) return;
     if (chargee >= outgoingConnections.size()) return;
 
-    connectionStrengths[chargee] += 100;
+
+    connectionStrengths[chargee] += CONNECTION_STRENGTH_INCREASE;
     q->push (charge_i (outgoingConnections[chargee], charge));
 }
 
@@ -116,7 +117,7 @@ void structure::executeInstructions () {
 	cout << "Executing instructions on " << title << endl;
     // Split instructions
     vector<string> queue = getInstructions();
-    
+
     // Iterate over instructions
     for (string instruction : queue) {
         executeInstruction (instruction);
@@ -126,10 +127,11 @@ void structure::executeInstructions () {
 
 void structure::actuate () {
 	cout << title << " is actuating!" << endl;
-    thread t = thread(actuationHandle, motorNum);
+    actuationHandle (motorNum);
 }
 
 void structure::removeConnection (int connNum) {
+    cout << "Removing connection " << connNum << endl;
     vector<string> instrs = getInstructions();
     string newInstrs;
     for (string instruction : instrs) {
@@ -164,7 +166,6 @@ structure::structure (actionqueue *queue) {
 }
 
 void structure::update (int addingCharge) {
-	cout << title << " is updating!" << endl;
     // Recalculate active charge
     if (activeCharge > 0) {
         activeCharge -= (getNanos()-nanosAtLastUpdate)*CHARGE_DECREASE;
@@ -228,6 +229,7 @@ void structurebuffer::insertRandomNode () {
 }
 
 void structurebuffer::modify (int iterations) {
+    cout << "Modifying net!" << endl;
     for (int i = 0; i < iterations; i++) {
         int operation = random () % 3;
         int nodeIndex = random () % buffer.size();
@@ -266,17 +268,18 @@ void structurebuffer::modify (int iterations) {
 
 void motorTest (int i) {
 	cout << "We did it!" << endl;
+    return;
 }
 
 int main () {
-    structurebuffer test = structurebuffer (true);
+    structurebuffer test = structurebuffer (false);
 
-    test.addMotor (motorTest);
+    test.addMotor (&motorTest);
 
     structure *sensor = new structure (test.q);
     sensor->outgoingConnections.push_back (test.motors[0]);
     sensor->connectionStrengths.push_back (100000);
-    sensor->instructionSequence = "charge|0|100";
+    sensor->instructionSequence = "charge|0|1000";
     test.addSensor (sensor);
 
     cout << "Sensor: " << test.sensors[0]->title << endl;
@@ -284,7 +287,11 @@ int main () {
     cout << "Motor: " << test.motors[0]->title << endl;
 
     cout << "Commence test:" << endl << endl;
-    test.sensors[0]->update (1000);
+    
+    while (1) {
+        test.sensors[0]->update (1000);
+        this_thread::sleep_for (chrono::milliseconds(500));
+    }
     //mainloop_pc ();
 }
 

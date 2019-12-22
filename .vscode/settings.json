@@ -60,6 +60,7 @@
         "vector": "cpp",
         "__hash_table": "cpp",
         "array": "cpp",
-        "unordered_map": "cpp"
+        "unordered_map": "cpp",
+        "iostream": "cpp"
     }
 }
