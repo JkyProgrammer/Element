@@ -137,11 +137,12 @@ void structure::removeConnection (int connNum) {
     for (string instruction : instrs) {
         vector<string> parts = getInstructionParts (instruction);
         bool wantsRemoving = false;
-        if (parts[0] == "charge" && stoi (parts[1]) == connNum) wantsRemoving = true;
-        if (!wantsRemoving) {
-            newInstrs += instruction + " ";
-        }
+        if (parts[0] == "charge") {
+            if (stoi (parts[1]) > connNum) newInstrs += parts[0] + "|" + to_string(stoi(parts[1])-1) + "|" + parts[2] + " ";
+            else if (stoi (parts[1]) < connNum) newInstrs += instruction + " ";
+        } else newInstrs += instruction + " ";
     }
+    instructionSequence = newInstrs;
     vector<structure *> newo;
     vector<int> newc;
     for (int i = 0; i < outgoingConnections.size(); i++) {
@@ -271,8 +272,9 @@ void structurebuffer::modify (int iterations) {
 //     return;
 // }
 
-void triggerInput (int sensorNum) {
-    // TODO: Implement modification on input
+void structurebuffer::triggerInput (int sensorNum, int charge) {
+    sensors[sensorNum]->update (charge);
+    if (modifyOnInput) modify (1);
 }
 
 int main () {
