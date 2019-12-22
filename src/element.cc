@@ -266,33 +266,37 @@ void structurebuffer::modify (int iterations) {
     }
 }
 
-void motorTest (int i) {
-	cout << "We did it!" << endl;
-    return;
+// void motorTest (int i) {
+// 	cout << "We did it!" << endl;
+//     return;
+// }
+
+void triggerInput (int sensorNum) {
+    // TODO: Implement modification on input
 }
 
 int main () {
-    structurebuffer test = structurebuffer (false);
+    // structurebuffer test = structurebuffer (false);
 
-    test.addMotor (&motorTest);
+    // test.addMotor (&motorTest);
 
-    structure *sensor = new structure (test.q);
-    sensor->outgoingConnections.push_back (test.motors[0]);
-    sensor->connectionStrengths.push_back (100000);
-    sensor->instructionSequence = "charge|0|1000";
-    test.addSensor (sensor);
+    // structure *sensor = new structure (test.q);
+    // sensor->outgoingConnections.push_back (test.motors[0]);
+    // sensor->connectionStrengths.push_back (100000);
+    // sensor->instructionSequence = "charge|0|1000";
+    // test.addSensor (sensor);
 
-    cout << "Sensor: " << test.sensors[0]->title << endl;
+    // cout << "Sensor: " << test.sensors[0]->title << endl;
     
-    cout << "Motor: " << test.motors[0]->title << endl;
+    // cout << "Motor: " << test.motors[0]->title << endl;
 
-    cout << "Commence test:" << endl << endl;
+    // cout << "Commence test:" << endl << endl;
     
-    while (1) {
-        test.sensors[0]->update (1000);
-        this_thread::sleep_for (chrono::milliseconds(500));
-    }
-    //mainloop_pc ();
+    // while (1) {
+    //     test.sensors[0]->update (1000);
+    //     this_thread::sleep_for (chrono::milliseconds(500));
+    // }
+    mainloop_pc ();
 }
 
 // TODO: Write positive improvement system

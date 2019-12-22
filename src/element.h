@@ -16,6 +16,8 @@ using namespace std;
 #define WORKER_THREADS_NUM 4
 #define WORKER_UPDATE_DELAY 10
 
+int mainloop_pc ();
+
 long long getNanos ();
 int countOccurrences (char c, string s);
 
@@ -117,6 +119,8 @@ public:
     void modify (int iterations);
 
     void insertRandomNode ();
+
+    void triggerInput (int sensorNum);
 };
 
 string makeInstruction (structure forStruct);
