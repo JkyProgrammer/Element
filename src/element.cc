@@ -267,14 +267,13 @@ void structurebuffer::modify (int iterations) {
     }
 }
 
-// void motorTest (int i) {
-// 	cout << "We did it!" << endl;
-//     return;
-// }
-
 void structurebuffer::triggerInput (int sensorNum, int charge) {
     sensors[sensorNum]->update (charge);
     if (modifyOnInput) modify (1);
+}
+
+structure * makeStructure (structurebuffer buffer) {
+    // TODO: Generate a random node
 }
 
 int main () {

@@ -16,8 +16,13 @@ using namespace std;
 #define WORKER_THREADS_NUM 4 // The number of worker threads availble for updating waiting structures
 #define WORKER_UPDATE_DELAY 10 // The delay in milliseconds between checking the queue per worker thread (i.e. there will be WORKER_THREADS_NUM concurrent updates in WORKER_UPDATE_DELAY milliseconds)
 
+#define SAVE_LOOP_WAIT 50 // The number of sensor loop updates to perform before the net is autosaved (use dependent upon mainloop implementation)
+
 // Mainloop function for running on a desktop
 int mainloop_pc ();
+
+// Mainloop function for running on the designed quad system
+int mainloop_quad ();
 
 // Quickly grab the number of nanoseconds since start time
 long long getNanos ();
@@ -159,6 +164,9 @@ public:
 
 // Generate a random instruction given a structure's available connections
 string makeInstruction (structure forStruct);
+
+// Generate a new node for a given structurebuffer
+structure * makeStructure (structurebuffer buffer);
 
 #define ELEMENT
 #endif
