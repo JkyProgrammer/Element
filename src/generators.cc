@@ -17,9 +17,10 @@ int mainloop_pc () {
 
 // ======== CODE FOR QUAD ========
 
-// Input feeds: 12300
+// Input feeds: 12310
 // 12288 (1 camera, 64 * 64 pixels with 3 colour based triggers per pixel)
 // 12 pressure sensors (1 on each foot with 3 levels of pressure)
+// 10 infrared distance sensors (2, one on each side, both facing forwards, each with 5 levels of sensitivity)
 
 // Output feeds: 96
 // 24 servos (4 hips, 4 knees, 4 ankles, with a feed for going in each direction)
@@ -28,15 +29,45 @@ int mainloop_pc () {
 
 void handle_quad (int i) {
     // TODO: Handle actuators here
+    if (i < 24) { // It's a servo
+        int servoNum = i / 2;
+        int odd = i % 2;
+        int pin = servoPins[servoNum];
+        if (odd) {
+            servoPWMs[servoNum] -= 8;
+            if (servoPWMs[servoNum] < 0) servoPWMs[servoNum] = 0;
+        } else {
+            servoPWMs[servoNum] += 8;
+            if (servoPWMs[servoNum] > 1023) servoPWMs[servoNum] = 1023;
+        }
+        system ("gpio pwm " + string(pin) + " " + string (servoPWMs[servoNum]));
+    }
 }
+
+int[] servoPins = {5, 6, 12, 13, 17, 20, 21, 22, 23, 24, 25, 27};
+int[12] servoPWMs = {512};
 
 int mainloop_quad () {
     structurebuffer quadsb = structurebuffer (true, "quad.sb");
-    if (quadsb.buffer.size < 1) {
+    if (quadsb.buffer.size() < 1) {
+        // TODO: Make a proper net
         // Generate a new net
-        for (int i = 0; i < 12300; i++) quadsb.addSensor (makeStructure(quadsb));
-        for (int j = 0; j < 96; j++) quadsb.addMotor (handle_quad);
+        for (int i = 0; i < 10; i++) quadsb.addSensor (makeStructure(quadsb)); // For now only the 10 distance sensors have been implemented
+        for (int j = 0; j < 24; j++) quadsb.addMotor (handle_quad); // For now only the 24 servos have been implemented
     }
+    
+    system ("gpio mode 5 pwm");
+    system ("gpio mode 6 pwm");
+    system ("gpio mode 12 pwm");
+    system ("gpio mode 13 pwm");
+    system ("gpio mode 17 pwm");
+    system ("gpio mode 20 pwm");
+    system ("gpio mode 21 pwm");
+    system ("gpio mode 22 pwm");
+    system ("gpio mode 23 pwm");
+    system ("gpio mode 24 pwm");
+    system ("gpio mode 25 pwm");
+    system ("gpio mode 27 pwm");
 
     int saveWait = 0;
     while (true) { // Sensor mainloop

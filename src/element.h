@@ -105,7 +105,7 @@ public:
 class actionqueue {
 private:
     // The base queue containing the instructions which need to be executed
-	queue<charge_i> queue;
+	queue<charge_i> queueobj;
     // List maintaining references to the worker threads associated with this actionqueue object
 	vector<thread*> threads;
 

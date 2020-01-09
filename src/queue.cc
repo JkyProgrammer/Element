@@ -4,14 +4,14 @@
 
 void actionqueue::push (charge_i c) {
 	m.lock();
-	queue.push (c);
+	queueobj.push (c);
 	m.unlock();
 }
 
 charge_i actionqueue::pop () {
 	charge_i rval = charge_i (nullptr, -1);
 	m.lock();
-	if (!queue.empty()) { rval = queue.front(); queue.pop(); }
+	if (!queueobj.empty()) { rval = queueobj.front(); queueobj.pop(); }
 	m.unlock();
 	return rval;
 }
