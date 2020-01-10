@@ -68,10 +68,17 @@ int mainloop_quad () {
     system ("gpio mode 24 pwm");
     system ("gpio mode 25 pwm");
     system ("gpio mode 27 pwm");
+    
+    system ("gpio mode 9 input");
+    system ("gpio mode 10 input");
 
     int saveWait = 0;
     while (true) { // Sensor mainloop
         // TODO: Pass data to the 12 thousand sensors here (thats gonna be fun implementing)
+        
+        int distanceIn1 = system ("gpio aread 9");
+        int distanceIn2 = system ("gpio aread 10");
+        
         saveWait++;
         if (saveWait >= SAVE_LOOP_WAIT) {
             saveWait = 0;
