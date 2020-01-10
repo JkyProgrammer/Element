@@ -114,7 +114,9 @@ vector<string> structure::getInstructionParts (string instruction) {
 }
 
 void structure::executeInstructions () {
+    #ifdef DEBUG
 	cout << "Executing instructions on " << title << endl;
+    #endif
     // Split instructions
     vector<string> queue = getInstructions();
 
@@ -122,11 +124,15 @@ void structure::executeInstructions () {
     for (string instruction : queue) {
         executeInstruction (instruction);
     }
+    #ifdef DEBUG
     cout << "Execution of " << title << " finished successfully." << endl;
+    #endif
 }
 
 void structure::actuate () {
+    #ifdef DEBUG
 	cout << title << " is actuating!" << endl;
+    #endif
     actuationHandle (motorNum);
 }
 
@@ -159,10 +165,12 @@ void structure::removeConnection (int connNum) {
 structure::structure (actionqueue *queue) {
 	q = queue;
     activeCharge = 0;
+    #ifdef DEBUG
     title = "";
     for (int i = 0; i < 32; i++) {
         title += namechars[random () % namechars.size()];
     }
+    #endif
     nanosAtLastUpdate = getNanos();
 }
 
@@ -174,7 +182,7 @@ void structure::update (int addingCharge) {
     if (activeCharge < 0) activeCharge = 0;
     activeCharge += addingCharge;
     if (activeCharge >= CHARGE_THRESHOLD) {
-        if (!isMotor) {
+        if (motorNum < 0) {
             executeInstructions();
         } else {
             actuate ();
@@ -214,7 +222,6 @@ void structurebuffer::addSensor (structure *s) {
 
 void structurebuffer::addMotor (void (*ah) (int)) {
     structure *s = new structure(q);
-    s->isMotor = true;
     s->motorNum = motors.size();
     s->actuationHandle = ah;
     buffer.push_back (s);
@@ -297,6 +304,10 @@ int main () {
     //     test.sensors[0]->update (1000);
     //     this_thread::sleep_for (chrono::milliseconds(500));
     // }
+
+    structure s = structure (new actionqueue());
+    cout << sizeof (s) << endl;
+
     mainloop_pc ();
 }
 

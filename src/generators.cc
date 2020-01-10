@@ -17,15 +17,35 @@ int mainloop_pc () {
 
 // ======== CODE FOR QUAD ========
 
-// Input feeds: 12310
+// Input feeds: 12305
 // 12288 (1 camera, 64 * 64 pixels with 3 colour based triggers per pixel)
 // 12 pressure sensors (1 on each foot with 3 levels of pressure)
-// 10 infrared distance sensors (2, one on each side, both facing forwards, each with 5 levels of sensitivity)
+// 10 infrared distance sensors (two sensors, back and front, each with 5 levels of sensitivity)
 
 // Output feeds: 96
 // 24 servos (4 hips, 4 knees, 4 ankles, with a feed for going in each direction)
 // 72 (12 neopixel ring with on and off feeds for red, green, and blue)
 
+int servoPins[12] = {5, 6, 12, 13, 17, 20, 21, 22, 23, 24, 25, 27};
+int servoPWMs[12] = {90};
+
+// Set a pin to a particular mode
+// Mode can be:
+// 0 = input
+// 1 = output
+// 2 = PWM
+void pinMode (int pin, int mode) {
+    string _mode;
+    if (mode == 0) _mode = "input";
+    if (mode == 1) _mode = "output";
+    if (mode == 2) _mode = "pwm";
+    system (("gpio mode " + to_string(pin) + " " + _mode).c_str());
+}
+
+// Control a servo pin
+void servoPin (int pin, int deg) {
+    // TODO: Move servo to degree
+}
 
 void handle_quad (int i) {
     // TODO: Handle actuators here
@@ -34,18 +54,16 @@ void handle_quad (int i) {
         int odd = i % 2;
         int pin = servoPins[servoNum];
         if (odd) {
-            servoPWMs[servoNum] -= 8;
+            servoPWMs[servoNum] -= 6;
             if (servoPWMs[servoNum] < 0) servoPWMs[servoNum] = 0;
         } else {
-            servoPWMs[servoNum] += 8;
-            if (servoPWMs[servoNum] > 1023) servoPWMs[servoNum] = 1023;
+            servoPWMs[servoNum] += 6;
+            if (servoPWMs[servoNum] > 180) servoPWMs[servoNum] = 180;
         }
-        system ("gpio pwm " + string(pin) + " " + string (servoPWMs[servoNum]));
+
+        servoPin (pin, servoPWMs[servoNum]);
     }
 }
-
-int[] servoPins = {5, 6, 12, 13, 17, 20, 21, 22, 23, 24, 25, 27};
-int[12] servoPWMs = {512};
 
 int mainloop_quad () {
     structurebuffer quadsb = structurebuffer (true, "quad.sb");
@@ -70,14 +88,10 @@ int mainloop_quad () {
     system ("gpio mode 27 pwm");
     
     system ("gpio mode 9 input");
-    system ("gpio mode 10 input");
 
     int saveWait = 0;
     while (true) { // Sensor mainloop
         // TODO: Pass data to the 12 thousand sensors here (thats gonna be fun implementing)
-        
-        int distanceIn1 = system ("gpio aread 9");
-        int distanceIn2 = system ("gpio aread 10");
         
         saveWait++;
         if (saveWait >= SAVE_LOOP_WAIT) {

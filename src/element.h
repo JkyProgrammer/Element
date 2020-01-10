@@ -8,6 +8,9 @@ using namespace std;
 
 #ifndef ELEMENT
 
+// Uncomment this line for debug output (WARNING: increases structure memory size, increasing memory pressure and likely decreasing performance)
+//#define DEBUG
+
 #define CHARGE_DECREASE 0.001 // The amount by which charge decreases per nanosecond
 #define CHARGE_THRESHOLD 64 // The minimum charge required for the node to be able to execute/actuate
 #define CONNECTION_STRENGTH_DECREASE 0.00000000000001 // The amount by which connection strength decreases per nanosecond
@@ -61,12 +64,13 @@ public:
     // Constructor
     structure (actionqueue *queue);
 
-    
+    #ifdef DEBUG
     string title; // Identifier for this structure
+    #endif
     vector<structure *> outgoingConnections; // List of outgoing connections to other structures
     vector<int> connectionStrengths; // Outgoing connection strengths
 
-    int activeCharge; // Charge currently present in this structure
+    unsigned char activeCharge; // Charge currently present in this structure
     long long nanosAtLastUpdate; // Used to calculate charge dropoff between updates
     string instructionSequence; // Sequence of instructions to execute when the CHARGE_THRESHOLD is satisfied
 
@@ -85,8 +89,7 @@ public:
     // Return a list of parts from a given instruction
     vector<string> getInstructionParts (string instruction);
 
-    bool isMotor = false; // Determines if this node is a motor node or not
-    int motorNum = -1; // Reference for the motor handler function to decide what operation to perform, -1 if the node is not a motor node
+    unsigned char motorNum = -1; // Reference for the motor handler function to decide what operation to perform, -1 if the node is not a motor node
     void (*actuationHandle) (int); // Function pointer to the motor handler function, unset if the node is not a motor node
 };
 
