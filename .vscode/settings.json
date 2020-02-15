@@ -61,6 +61,7 @@
         "__hash_table": "cpp",
         "array": "cpp",
         "unordered_map": "cpp",
-        "iostream": "cpp"
+        "iostream": "cpp",
+        "complex": "cpp"
     }
 }
