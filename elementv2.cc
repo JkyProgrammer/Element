@@ -44,6 +44,7 @@ class node {
 };
 
 vector<node*> queue;
+vector<int> inputs;
 
 // Determine whether the queue already has a node registered with it
 bool nodeAlreadyInQueue (node* n) {
@@ -146,6 +147,9 @@ bool computeNodeOnly (node* n) {
         finalValue = abs (v[0]);
         break;
     case 17:
+        finalValue = (v[0] + v[1])/2;
+        break;
+    case 18: //TODO
         finalValue = (v[0] + v[1])/2;
         break;
     default:
