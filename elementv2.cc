@@ -150,7 +150,7 @@ bool computeNodeOnly (node* n) {
         finalValue = (v[0] + v[1])/2;
         break;
     case 18: //TODO
-        finalValue = (v[0] + v[1])/2;
+        finalValue = inputs[carg0];
         break;
     default:
         // Unsupported operation
@@ -168,13 +168,6 @@ vector<int> outputValues;
 
 // Compute the entire net and dump the outputs it produces
 void computeNetOutputs () {
-    // Generate requirements for the net to compute, in order of requirement
-    // TODO: Only do this if the net has changed since last update
-    queue.clear();
-    for (node* output : outputs) {
-        registerNodeRequirements (output);
-    }
-    
     // Compute all nodes in order
     // TODO: Make this faster (concurrency, workers, etc)
     for (node* tbc : queue) {
@@ -190,9 +183,22 @@ void computeNetOutputs () {
     clearAllNodeComputations();
 }
 
+void updateComputationOrder () {
+    queue.clear();
+    for (node* output : outputs) {
+        registerNodeRequirements (output);
+    }
+}
 
-// TOOD: Main
+
+// TODO: Main
+// TODO: Loading and saving
+// TODO: Learning
 int main () {
-    cout << sizeof(node) << endl;
+
+    updateComputationOrder();
+
+    while (true) computeNetOutputs();
+
     return 0;
 }
