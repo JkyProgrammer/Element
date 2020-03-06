@@ -219,7 +219,7 @@ void updateComputationOrder () {
 // TODO: Real IO
 
 void makeRandomNet () {
-
+    
 }
 
 int main () {
