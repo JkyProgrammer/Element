@@ -62,6 +62,13 @@ class node {
 
     int lastComputedValue;
     bool hasBeenRecomputed;
+    
+    node (node *v0, node *v1, int c, char op) {
+    	varg0 = v0;
+    	varg1 = v1;
+    	carg0 = c;
+    	operation = op;
+    }
 };
 
 vector<node*> queue;
@@ -78,6 +85,16 @@ void clearAllNodeComputations () {
     for (node* no : queue) no->hasBeenRecomputed = false;
 }
 
+// Find the immediate requirements for a node to be computed
+node** getNodeFirstLevelRequirements (node* n) {
+    node** out = new node*[2];
+    if ((n->operation % 2) == 1) out[1] = n->varg1;
+    else out[1] = NULL;
+    if (n->operation != 18)
+        out[0] = n->varg0;
+    return out;
+}
+
 // Register the requirements for the computation of a node recursively with the queue, only as long as it is not already there
 void registerNodeRequirements (node* n) {
     // Find out what we need
@@ -91,15 +108,7 @@ void registerNodeRequirements (node* n) {
         queue.push_back (n);
 }
 
-// Find the immediate requirements for a node to be computed
-node** getNodeFirstLevelRequirements (node* n) {
-    node** out = new node*[2];
-    if ((n->operation % 2) == 1) out[1] = n->varg1;
-    else out[1] = NULL;
-    if (n->operation != 18)
-        out[0] = n->varg0;
-    return out;
-}
+
 
 // Compute a single node, returning status false for failure, true for success
 bool computeNodeOnly (node* n) {
@@ -171,7 +180,7 @@ bool computeNodeOnly (node* n) {
         finalValue = (v[0] + v[1])/2;
         break;
     case 18: //TODO
-        finalValue = inputs[carg0];
+        finalValue = inputs[c];
         break;
     default:
         // Unsupported operation
@@ -215,11 +224,23 @@ void updateComputationOrder () {
 // TODO: Main
 // TODO: Loading and saving
 // TODO: Learning
-// TODO: Default net
 // TODO: Real IO
 
 void makeRandomNet () {
-    
+    node *i1 = new node (NULL, NULL, 0, 18);
+    node *i2 = new node (NULL, NULL, 1, 18);
+    vector<node*> tmp;
+    tmp.push_back (i1);
+    tmp.push_back (i2);
+    for (int i = 0; i < 60; i++) {
+    	node *x1 = tmp[random() % tmp.size()];
+    	node *x2 = tmp[random() % tmp.size()];
+    	tmp.push_back (new node (x1, x2, random () % 256, random () % 19));
+    }
+    for (int i = tmp.size()-12; i < tmp.size(); i++) {
+    	outputs.clear ();
+    	outputs.push_back (tmp[i]);
+    }
 }
 
 int main () {
