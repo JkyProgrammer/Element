@@ -28,6 +28,27 @@ using namespace std;
 
 */
 
+/* IO Spec
+In:
+00 = Front Rangefinder
+01 = Back Rangefinder
+
+Out:
+00 = Front Right Hip
+01 = Front Right Knee
+02 = Front Right Ankle
+03 = Front Left Hip
+04 = Front Left Knee
+05 = Front Left Ankle
+06 = Back Right Hip
+07 = Back Right Knee
+08 = Back Right Ankle
+09 = Back Left Hip
+10 = Back Left Knee
+11 = Back Left Ankle
+
+*/
+
 class node {
     public:
     char operation;
@@ -194,6 +215,13 @@ void updateComputationOrder () {
 // TODO: Main
 // TODO: Loading and saving
 // TODO: Learning
+// TODO: Default net
+// TODO: Real IO
+
+void makeRandomNet () {
+
+}
+
 int main () {
 
     updateComputationOrder();
