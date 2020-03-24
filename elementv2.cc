@@ -24,7 +24,13 @@ using namespace std;
 15 = Varaible Exponent (varg0, varg1)
 16 = Absolute (varg0)
 17 = Mean (varg0, varg1)
-18 = Input Node (carg0)
+18 = Constant Equals (varg0, carg0)
+19 = Variable Equals (varg0, varg1)
+20 = Constant More than (varg0, carg0)
+21 = Variable More than (varg0, varg1)
+22 = Constant Less than (varg0, carg0)
+23 = Variable Less than (varg0, varg1)
+24 = Input Node (carg0)
 
 */
 
@@ -90,7 +96,7 @@ node** getNodeFirstLevelRequirements (node* n) {
     node** out = new node*[2];
     if ((n->operation % 2) == 1) out[1] = n->varg1;
     else out[1] = NULL;
-    if (n->operation != 18)
+    if (n->operation != 24)
         out[0] = n->varg0;
     return out;
 }
@@ -179,7 +185,25 @@ bool computeNodeOnly (node* n) {
     case 17:
         finalValue = (v[0] + v[1])/2;
         break;
-    case 18: //TODO
+    case 18:
+        finalValue = (v[0] == c);
+        break;
+    case 19:
+        finalValue = (v[0] == v[1]);
+        break;
+    case 20:
+        finalValue = (v[0] > c);
+        break;
+    case 21:
+        finalValue = (v[0] > v[1]);
+        break;
+    case 22:
+        finalValue = (v[0] < c);
+        break;
+    case 23:
+        finalValue = (v[0] < v[1]);
+        break;
+    case 24:
         finalValue = inputs[c];
         break;
     default:
