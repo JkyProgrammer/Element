@@ -1,6 +1,8 @@
 #include <iostream>
 #include <vector>
 #include <math.h>
+#include <ostream>
+#include <fstream>
 
 using namespace std;
 
@@ -77,13 +79,28 @@ class node {
     }
 };
 
-vector<node*> queue;
 vector<int> inputs;
+vector<int> outputValues;
+vector<node*> outputs;
+vector<node*> queue;
+vector<node*> allNodes;
 
 // Determine whether the queue already has a node registered with it
 bool nodeAlreadyInQueue (node* n) {
     for (node* no : queue) if (no == n) return true;
     return false;
+}
+
+int *getValuesFrom (string nodestr) {
+    int returnVal[4];
+    int cinds[3];
+    int cx = 0;
+    for (int i = 0; i < nodestr.size(); i++) {
+        if (nodestr[i] == ',') { cinds[cx] = i; cx++; }
+        if (cx == 3) break;
+    }
+
+    //TODO
 }
 
 // Reset the computation state of the net ready for computation
@@ -113,8 +130,6 @@ void registerNodeRequirements (node* n) {
     if (!nodeAlreadyInQueue (n))
         queue.push_back (n);
 }
-
-
 
 // Compute a single node, returning status false for failure, true for success
 bool computeNodeOnly (node* n) {
@@ -217,9 +232,6 @@ bool computeNodeOnly (node* n) {
     return true;
 }
 
-vector<node*> outputs;
-vector<int> outputValues;
-
 // Compute the entire net and dump the outputs it produces
 void computeNetOutputs () {
     // Compute all nodes in order
@@ -251,15 +263,20 @@ void updateComputationOrder () {
 // TODO: Real IO
 
 void makeRandomNet () {
-    node *i1 = new node (NULL, NULL, 0, 18);
-    node *i2 = new node (NULL, NULL, 1, 18);
+    node *i1 = new node (NULL, NULL, 0, 24);
+    node *i2 = new node (NULL, NULL, 1, 24);
+    allNodes.clear();
+    allNodes.push_back (i1);
+    allNodes.push_back (i2);
     vector<node*> tmp;
     tmp.push_back (i1);
     tmp.push_back (i2);
     for (int i = 0; i < 60; i++) {
     	node *x1 = tmp[random() % tmp.size()];
     	node *x2 = tmp[random() % tmp.size()];
-    	tmp.push_back (new node (x1, x2, random () % 256, random () % 19));
+        node *newN = new node (x1, x2, random () % 256, random () % 24);
+    	tmp.push_back (newN);
+        allNodes.push_back (newN);
     }
     for (int i = tmp.size()-12; i < tmp.size(); i++) {
     	outputs.clear ();
@@ -267,11 +284,80 @@ void makeRandomNet () {
     }
 }
 
+int indexOfNodeInNet (node *n) {
+    int i = -1;
+    for (node *a : allNodes) {
+        i++;
+        if (n == a) break;
+    }
+    return i;
+}
+
+void writeToDisk (string filepath) {
+    string fileContent = "<begin-element-nodestore>\n";
+    for (node *n : allNodes) {
+        string line = "";
+        line += "{";
+        line += to_string (n->operation);
+        line += ",";
+        line += to_string (n->carg0);
+        line += ",";
+        line += to_string (indexOfNodeInNet (n->varg0));
+        line += ",";
+        line += to_string (indexOfNodeInNet (n->varg1));
+        line += "}";
+        fileContent += line + "\n";
+    }
+    ofstream f (filepath);
+    f << fileContent << "<end-element-nodestore>";
+    f.close();
+}
+
+void readFromDisk (string filepath) {
+    vector<string> fileContent;
+    ifstream f (filepath);
+    string t;
+    f >> t;
+    if (t != "<begin-element-nodestore>") return;
+    while (t != "<end-element-nodestore>") {
+        f >> t;
+        fileContent.push_back (t);
+    }
+    fileContent.pop_back ();
+
+    allNodes.clear();
+
+    // First pass
+    for (string nod : fileContent) {
+        int *values = getValuesFrom (nod);
+        allNodes.push_back (new node (NULL, NULL, values[1], values[0]));
+    }
+
+    // Second pass
+    for (int i = 0; i < fileContent.size(); i++) {
+        int *values = getValuesFrom (fileContent[i]);
+        allNodes[i]->varg0 = allNodes[values[2]];
+        allNodes[i]->varg1 = allNodes[values[3]];
+    }
+}
+
 int main () {
+    readFromDisk ("element.net");
+
+
+    return 0;
+    makeRandomNet ();
+    writeToDisk ("element.net");
+
+    return 0;
 
     updateComputationOrder();
 
-    while (true) computeNetOutputs();
+    while (true) {
+        // TODO: Update inputs
+        computeNetOutputs();
+        // TODO: Apply output
+    }
 
     return 0;
 }
