@@ -67,6 +67,7 @@ void structurebuffer::threadStart () {
 }
 
 int structurebuffer::indexOfNodeInNet (structure* s) {
+	if (s == NULL) return -1; 
     int i = 0;
     for (structure *ss : buffer) {
         if (ss == s) return i;
