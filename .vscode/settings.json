@@ -62,6 +62,11 @@
         "array": "cpp",
         "unordered_map": "cpp",
         "iostream": "cpp",
-        "complex": "cpp"
+        "complex": "cpp",
+        "queue": "cpp",
+        "stack": "cpp",
+        "thread": "cpp",
+        "filesystem": "cpp",
+        "fstream": "cpp"
     }
 }
