@@ -1,5 +1,4 @@
-// TODO: Write up
-#include "elementv3.h"
+#include "elementv4.h"
 
 void structure::call (int i) {
     if (motorNum != -1) {
@@ -30,6 +29,29 @@ void structure::call (int i) {
 void structure::setLinks (structure *ls[MAX_LINKS]) {
     for (int i = 0; i < MAX_LINKS; i++) links[i] = ls[i];
 }
+int structure::numLinks () {
+    int n = 8;
+    for (int i = 0; i < MAX_LINKS; i++) {
+        if (links[i] == NULL) {
+            n = i;
+            break;
+        }
+    }
+    return n;
+}
+
+void structure::addLink (structure *s) {
+    int n = 8;
+    for (int i = 0; i < MAX_LINKS; i++) {
+        if (links[i] == NULL) {
+            n = i;
+            break;
+        }
+        if (links[i] == s) return;
+    }
+    if (n == 8) return;
+    links[n] = s;
+}
 
 structure::structure (structurebuffer* buf) {
     buffer = buf;
@@ -40,19 +62,26 @@ structure::structure (structurebuffer* buf, int mot) {
 }
 
 structurebuffer::structurebuffer () {
+    generateNodes ();
+    #ifdef MIM_MODE
+    env = new mim_environment (this);
+    #endif
     for (int i = 0; i < NUM_WORKER_THREADS; i++) {
         thread *t = new thread (threadStart);
         threads.push_back (t);
     }
-    generateNodes ();
 }
 
 structurebuffer::structurebuffer (string path) {
+    if (!readIn (path)) generateNodes();
+    writeOut(path);
+    #ifdef MIM_MODE
+    env = new mim_environment (this);
+    #endif
     for (int i = 0; i < NUM_WORKER_THREADS; i++) {
         thread *t = new thread (threadStart);
         threads.push_back (t);
     }
-    readIn (path);
 }
 
 void structurebuffer::threadStart () {
@@ -111,10 +140,10 @@ vector<int> getIndices (string s) {
     return arr;
 }
 
-void structurebuffer::readIn (string path) {
+bool structurebuffer::readIn (string path) {
     ifstream file;
     file.open (path);
-    if (!file.is_open) return;
+    if (!file.is_open) false;
     string line;
     vector<string> nodelines;
     string ins;
@@ -153,23 +182,55 @@ void structurebuffer::readIn (string path) {
         buffer[on] = n;
         x++;
     }
+    return true;
 }
 
 void structurebuffer::generateNodes () {
-    // TODO: Generate nodes
+    buffer.clear();
+    sensors.clear();
+    motors.clear();
+    for (int i = 0; i < NUM_INPUTS; i++) {
+        structure *s = new structure (this);
+        buffer.push_back (s);
+        sensors.push_back (s);
+    }
+
+    for (int i = 0; i < NUM_OUTPUTS; i++) {
+        structure *s = new structure (this, i);
+        buffer.push_back (s);
+        motors.push_back (s);
+    }
+
+    for (int i,o = 0; i < NUM_INPUTS; i++) {
+        if (o == motors.size()) o = 0;
+        sensors[i]->addLink (motors[o]);
+    }
+
+    int numRelays = 0;
+    while (numRelays <= NUM_RELAYS) {
+        structure *o = buffer[rand() % buffer.size()];
+        if (o->isMotor()) continue;
+        int connectionNum = rand () % o->numLinks();
+        structure *r = new structure (this);
+        r->addLink (o->links[connectionNum]);
+        o->links[connectionNum] = r;
+        if (!(rand() % 3)) {
+            r->addLink (buffer[(rand() % buffer.size()-(1 + NUM_INPUTS)) + NUM_INPUTS]);
+        }
+    }
 }
 
 void structurebuffer::modify (int) {
     // TODO: Modify the net
 }
 
-void structurebuffer::insertRandomNode () {
-    // TODO: Insert a random node
+void structurebuffer::triggerInput (int n, int v) {
+    sensors[n]->call (v);
+}
+void structurebuffer::motorCall (int i) {
+    env->motorCall (i);
 }
 
-void structurebuffer::triggerInput (int, int) {
-    // TODO: Pass input
-}
-void structurebuffer::motorCall (int) {
-    // TODO: Receive a motor call
+mim_environment::mim_environment (structurebuffer *b) {
+    buffer = b;
 }
