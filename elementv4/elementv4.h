@@ -16,6 +16,7 @@ using namespace std;
 #define MAX_LINKS 8
 #define NUM_WORKER_THREADS 8
 #define WORKER_DELAY 10
+#define SENSOR_UPDATE_THRESHOLD 10
 
 #define MIM_MODE // Set the node setup to be compatible with the mouse-in-maze environment
 
@@ -25,13 +26,18 @@ using namespace std;
 #define NUM_RELAYS 500
 #endif
 
+class structurebuffer;
+class environment;
 
+#ifdef MIM_MODE
+class mim_environment;
+#endif
 
 class structure {
 public:
     void call (int);				// Send an impulse to this structure
 
-    structure (structurebuffer *);	// Default constructor
+    structure (structurebuffer*);	// Default constructor
 	structure (structurebuffer*, int);
 	void setLinks (structure *[MAX_LINKS]);
     void addLink (structure *);
@@ -49,11 +55,11 @@ struct charge_i {
 	structure *t;
 };
 
-class environment;
-
 class structurebuffer {
 private:
-    environment *env;
+    #ifdef MIM_MODE
+    mim_environment *env;
+    #endif
 	vector<thread *> threads; // Keeps the threads allocated
 public:
 	mutex queueLock;
@@ -91,14 +97,35 @@ public:
 class environment {
 protected:
     structurebuffer *buffer;
+
+    thread *looper;
+    void loop ();
 public:
     void motorCall (int);
+    void start ();
 };
 
 #ifdef MIM_MODE
+#define MAZE_SIZE 16
 class mim_environment : public environment {
+private:
+    int xPos, yPos;
+    int exitX, exitY;
+    int entranceX, entranceY;
+    int direction;
+
+    bool mazeData[MAZE_SIZE][MAZE_SIZE];
+
+    void sensorUpdate ();
+    void generateMaze ();
+
+    void loop ();
+
+    long long nanosAtLastUpdate;
 public:
     mim_environment (structurebuffer *);
+    void motorCall (int);
+    void start ();
 };
 #endif
 

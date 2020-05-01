@@ -1,5 +1,22 @@
 #include "elementv4.h"
 
+// ===== UTILS =====
+long long getNanos () {
+    return chrono::duration_cast<chrono::nanoseconds>(chrono::time_point_cast<chrono::nanoseconds>(chrono::high_resolution_clock::now()).time_since_epoch()).count();
+}
+
+vector<int> getIndices (string s) {
+    vector<int> arr;
+    arr.reserve (MAX_LINKS);
+    int j = 0;
+    for (int i = 0; i < s.size(); i++) {
+        if (s[i] == ':') j++;
+        else arr[j] += s[i];
+    }
+    return arr;
+}
+
+// ===== STRUCTURE =====
 void structure::call (int i) {
     if (motorNum != -1) {
         if (i > THRESHOLD) {
@@ -25,7 +42,6 @@ void structure::call (int i) {
         charge = i;
     }
 }
-
 void structure::setLinks (structure *ls[MAX_LINKS]) {
     for (int i = 0; i < MAX_LINKS; i++) links[i] = ls[i];
 }
@@ -39,7 +55,6 @@ int structure::numLinks () {
     }
     return n;
 }
-
 void structure::addLink (structure *s) {
     int n = 8;
     for (int i = 0; i < MAX_LINKS; i++) {
@@ -52,6 +67,7 @@ void structure::addLink (structure *s) {
     if (n == 8) return;
     links[n] = s;
 }
+bool structure::isMotor () {return (motorNum != -1);}
 
 structure::structure (structurebuffer* buf) {
     buffer = buf;
@@ -61,25 +77,39 @@ structure::structure (structurebuffer* buf, int mot) {
     buffer = buf;
 }
 
+// ===== STRUCTUREBUFFER =====
 structurebuffer::structurebuffer () {
-    generateNodes ();
+    long nanos = getNanos();
     #ifdef MIM_MODE
     env = new mim_environment (this);
     #endif
+    generateNodes ();
+    long end = getNanos();
+    float ms = (end-nanos)/1000000.0;
+    cout << "Setup took " << ms << endl;
+    #ifdef MIM_MODE
+    env->start();
+    #endif
     for (int i = 0; i < NUM_WORKER_THREADS; i++) {
-        thread *t = new thread (threadStart);
+        thread *t = new thread (&structurebuffer::threadStart, this);
         threads.push_back (t);
     }
 }
-
 structurebuffer::structurebuffer (string path) {
-    if (!readIn (path)) generateNodes();
-    writeOut(path);
+    long nanos = getNanos();
     #ifdef MIM_MODE
     env = new mim_environment (this);
     #endif
+    if (!readIn (path)) generateNodes();
+    writeOut(path);
+    long end = getNanos();
+    float ms = (end-nanos)/1000000.0;
+    cout << "Setup took " << ms << endl;
+    #ifdef MIM_MODE
+    env->start();
+    #endif
     for (int i = 0; i < NUM_WORKER_THREADS; i++) {
-        thread *t = new thread (threadStart);
+        thread *t = new thread (&structurebuffer::threadStart, this);
         threads.push_back (t);
     }
 }
@@ -94,7 +124,6 @@ void structurebuffer::threadStart () {
         this_thread::sleep_for (chrono::milliseconds(WORKER_DELAY));
     }
 }
-
 int structurebuffer::indexOfNodeInNet (structure* s) {
 	if (s == NULL) return -1; 
     int i = 0;
@@ -104,8 +133,8 @@ int structurebuffer::indexOfNodeInNet (structure* s) {
     }
     return -1;
 }
-
 void structurebuffer::writeOut (string path) {
+    cout << "Writing out node pattern to path..." << endl;
     ofstream file;
     file.open (path);
     for (structure *struc : buffer) {
@@ -127,23 +156,16 @@ void structurebuffer::writeOut (string path) {
     file << "\n";
 
     file.close();
+    cout << "Done." << endl;
 }
-
-vector<int> getIndices (string s) {
-    vector<int> arr;
-    arr.reserve (MAX_LINKS);
-    int j = 0;
-    for (int i = 0; i < s.size(); i++) {
-        if (s[i] == ':') j++;
-        else arr[j] += s[i];
-    }
-    return arr;
-}
-
 bool structurebuffer::readIn (string path) {
+    cout << "Reading node pattern from path..." << endl;
     ifstream file;
     file.open (path);
-    if (!file.is_open) false;
+    if (!file.is_open()) {
+        cout << "Failed." << endl;
+        return false;
+    }
     string line;
     vector<string> nodelines;
     string ins;
@@ -182,10 +204,11 @@ bool structurebuffer::readIn (string path) {
         buffer[on] = n;
         x++;
     }
+    cout << "Done." << endl;
     return true;
 }
-
 void structurebuffer::generateNodes () {
+    cout << "Generated node pattern..." << endl;
     buffer.clear();
     sensors.clear();
     motors.clear();
@@ -210,14 +233,19 @@ void structurebuffer::generateNodes () {
     while (numRelays <= NUM_RELAYS) {
         structure *o = buffer[rand() % buffer.size()];
         if (o->isMotor()) continue;
-        int connectionNum = rand () % o->numLinks();
-        structure *r = new structure (this);
-        r->addLink (o->links[connectionNum]);
-        o->links[connectionNum] = r;
-        if (!(rand() % 3)) {
-            r->addLink (buffer[(rand() % buffer.size()-(1 + NUM_INPUTS)) + NUM_INPUTS]);
+        int num = o->numLinks() > 0;
+        if (num) {
+            int connectionNum = rand () % o->numLinks();
+            structure *r = new structure (this);
+            r->addLink (o->links[connectionNum]);
+            o->links[connectionNum] = r;
         }
+        if (!(rand() % 3)) {
+            o->addLink (buffer[(rand() % buffer.size()-(1 + NUM_INPUTS)) + NUM_INPUTS]);
+        }
+        numRelays++;
     }
+    cout << "Done." << endl;
 }
 
 void structurebuffer::modify (int) {
@@ -231,6 +259,122 @@ void structurebuffer::motorCall (int i) {
     env->motorCall (i);
 }
 
+// ===== ENVIRONMENT =====
 mim_environment::mim_environment (structurebuffer *b) {
     buffer = b;
+    xPos = entranceX = rand() % MAZE_SIZE;
+    yPos = entranceY = rand() % MAZE_SIZE;
+    exitX = rand() % MAZE_SIZE;
+    exitY = rand() % MAZE_SIZE;
+    generateMaze();
 }
+
+void mim_environment::start () {
+    sensorUpdate();
+    looper = new thread (&mim_environment::loop, this);
+}
+void mim_environment::loop () {
+    while (true)
+        if (getNanos() - nanosAtLastUpdate > SENSOR_UPDATE_THRESHOLD)
+            sensorUpdate();
+}
+
+void mim_environment::sensorUpdate() {
+    nanosAtLastUpdate = getNanos();
+
+    int x,y = 0;
+    int distance = -1;
+    bool valueUnderCursor = false;
+    while (!valueUnderCursor) {
+        distance++;
+        if (direction == 0) y++;
+        if (direction == 1) x++;
+        if (direction == 2) y--;
+        if (direction == 3) x--;
+        valueUnderCursor = mazeData[y][x];
+    }
+
+    if (direction > 0) buffer->triggerInput (0, 128);
+    if (direction > 1) buffer->triggerInput (1, 128);
+    if (direction > 2) buffer->triggerInput (2, 128);
+    if (direction > 4) buffer->triggerInput (3, 128);
+    if (direction > 8) buffer->triggerInput (4, 128);
+    if (direction > 16) buffer->triggerInput (5, 128);
+    if (direction > 32) buffer->triggerInput (6, 128);
+    if (direction > 48) buffer->triggerInput (7, 128);
+    if (!(direction > 0)) buffer->triggerInput (8, 128);
+    if (!(direction > 1)) buffer->triggerInput (9, 128);
+    if (!(direction > 2)) buffer->triggerInput (10, 128);
+    if (!(direction > 4)) buffer->triggerInput (11, 128);
+    if (!(direction > 8)) buffer->triggerInput (12, 128);
+    if (!(direction > 16)) buffer->triggerInput (13, 128);
+    if (!(direction > 32)) buffer->triggerInput (14, 128);
+    if (!(direction > 48)) buffer->triggerInput (15, 128);
+}
+
+void mim_environment::motorCall(int i) {
+    if (i == 0) {
+        int tx = xPos;
+        int ty = yPos;
+        if (direction == 0) yPos++;
+        if (direction == 1) xPos++;
+        if (direction == 2) yPos--;
+        if (direction == 3) xPos--;
+        if (mazeData[xPos][yPos]) {
+            xPos = tx;
+            yPos = ty;
+        }
+    } else if (i == 1) {
+        if (direction == 0) yPos--;
+        if (direction == 1) xPos--;
+        if (direction == 2) yPos++;
+        if (direction == 3) xPos++;
+    } else if (i == 2) {
+        direction++;
+        if (direction > 3) direction = 0;
+    } else if (i == 3) {
+        direction--;
+        if (direction < 0) direction = 3;
+    }
+    sensorUpdate();
+    if (xPos == exitX && yPos == exitY) buffer->waitingForClose = true;
+}
+
+void mim_environment::generateMaze () {
+    // TODO: Generate maze i did not do this properly
+    bool dat[MAZE_SIZE][MAZE_SIZE] = {{1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
+                                      {1,0,0,0,0,0,1,0,0,1,0,0,1,1,0,1},
+                                      {1,1,1,1,1,0,1,1,0,1,1,0,1,1,0,1},
+                                      {1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,1},
+                                      {1,0,0,0,1,1,0,1,1,1,1,0,1,1,1,1},
+                                      {1,0,1,0,1,1,0,0,0,0,0,0,1,1,1,1},
+                                      {1,0,1,0,1,1,1,1,0,1,1,1,1,0,1,1},
+                                      {1,0,1,0,0,0,1,1,0,1,1,1,0,0,1,1},
+                                      {1,1,1,0,1,1,1,0,0,0,0,0,0,0,1,1},
+                                      {1,0,0,0,1,1,0,0,0,1,1,0,1,1,1,1},
+                                      {1,1,0,1,1,1,0,1,1,1,1,0,0,0,1,1},
+                                      {1,1,0,0,0,1,0,1,0,1,1,0,1,1,1,1},
+                                      {1,1,1,1,0,1,0,1,0,0,0,0,1,1,1,1},
+                                      {1,0,0,0,0,1,0,1,1,1,0,1,1,1,1,1},
+                                      {1,0,1,1,0,0,0,0,0,0,0,1,1,1,1,1},
+                                      {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1}};
+    for (int i = 0; i < MAZE_SIZE; i++)
+        for (int j = 0; j < MAZE_SIZE; j++)
+            mazeData[i][j] = dat[i][j];
+    entranceX = 1;
+    entranceY = 14;
+    exitX = 14;
+    exitY = 1;
+}
+
+// ===== MAIN =====
+int main () {
+    long nanos = getNanos();
+    structurebuffer *sb = new structurebuffer ("nodes");
+    long end = getNanos();
+    float ms = (end-nanos)/1000000.0;
+    cout << "I finished the maze!" << endl;
+    cout << "It took " << ms << " miliseconds" << endl;
+    return 0;
+}
+// TODO: Add comments
