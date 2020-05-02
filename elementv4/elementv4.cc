@@ -27,9 +27,10 @@ void structure::call (int i) {
         return;
     }
     if (i > THRESHOLD) {
-        int numLinks = sizeof (links)/sizeof(structure*);
-        int chargePerLink = (i + charge)/numLinks;
+        int n = numLinks();
+        int chargePerLink = (i + charge)/n;
         for (structure *s : links) {
+            if (s == NULL) break;
             buffer->queueLock.lock();
             queue<int> q;
             charge_i ci;
@@ -87,13 +88,15 @@ structurebuffer::structurebuffer () {
     long end = getNanos();
     float ms = (end-nanos)/1000000.0;
     cout << "Setup took " << ms << endl;
-    #ifdef MIM_MODE
-    env->start();
-    #endif
     for (int i = 0; i < NUM_WORKER_THREADS; i++) {
         thread *t = new thread (&structurebuffer::threadStart, this);
         threads.push_back (t);
     }
+    #ifdef MIM_MODE
+    env->start();
+    #endif
+
+    while (!waitingForClose);
 }
 structurebuffer::structurebuffer (string path) {
     long nanos = getNanos();
@@ -105,18 +108,21 @@ structurebuffer::structurebuffer (string path) {
     long end = getNanos();
     float ms = (end-nanos)/1000000.0;
     cout << "Setup took " << ms << endl;
-    #ifdef MIM_MODE
-    env->start();
-    #endif
     for (int i = 0; i < NUM_WORKER_THREADS; i++) {
         thread *t = new thread (&structurebuffer::threadStart, this);
         threads.push_back (t);
     }
+    #ifdef MIM_MODE
+    env->start();
+    #endif
+
+    while (!waitingForClose);
 }
 
 void structurebuffer::threadStart () {
     while (!waitingForClose) {
         queueLock.lock();
+        if (queue.empty()) { queueLock.unlock(); continue; }
         charge_i i = queue.front();
         queue.pop();
         queueLock.unlock();
@@ -271,12 +277,13 @@ mim_environment::mim_environment (structurebuffer *b) {
 
 void mim_environment::start () {
     sensorUpdate();
-    looper = new thread (&mim_environment::loop, this);
+    looper = thread (&mim_environment::loop, this);
 }
 void mim_environment::loop () {
-    while (true)
+    while (true) {
         if (getNanos() - nanosAtLastUpdate > SENSOR_UPDATE_THRESHOLD)
             sensorUpdate();
+    }
 }
 
 void mim_environment::sensorUpdate() {
@@ -287,29 +294,36 @@ void mim_environment::sensorUpdate() {
     bool valueUnderCursor = false;
     while (!valueUnderCursor) {
         distance++;
+        
         if (direction == 0) y++;
         if (direction == 1) x++;
         if (direction == 2) y--;
         if (direction == 3) x--;
+        if (x > MAZE_SIZE || x < 0) break;
+        if (y > MAZE_SIZE || y < 0) break;
         valueUnderCursor = mazeData[y][x];
     }
 
-    if (direction > 0) buffer->triggerInput (0, 128);
-    if (direction > 1) buffer->triggerInput (1, 128);
-    if (direction > 2) buffer->triggerInput (2, 128);
-    if (direction > 4) buffer->triggerInput (3, 128);
-    if (direction > 8) buffer->triggerInput (4, 128);
-    if (direction > 16) buffer->triggerInput (5, 128);
-    if (direction > 32) buffer->triggerInput (6, 128);
-    if (direction > 48) buffer->triggerInput (7, 128);
-    if (!(direction > 0)) buffer->triggerInput (8, 128);
-    if (!(direction > 1)) buffer->triggerInput (9, 128);
-    if (!(direction > 2)) buffer->triggerInput (10, 128);
-    if (!(direction > 4)) buffer->triggerInput (11, 128);
-    if (!(direction > 8)) buffer->triggerInput (12, 128);
-    if (!(direction > 16)) buffer->triggerInput (13, 128);
-    if (!(direction > 32)) buffer->triggerInput (14, 128);
-    if (!(direction > 48)) buffer->triggerInput (15, 128);
+    cout << distance << endl; // FIXME:
+
+    if (distance > 0) buffer->triggerInput (0, 128);
+    if (distance > 1) buffer->triggerInput (1, 128);
+    if (distance > 2) buffer->triggerInput (2, 128);
+    if (distance > 4) buffer->triggerInput (3, 128);
+    if (distance > 8) buffer->triggerInput (4, 128);
+    if (distance > 16) buffer->triggerInput (5, 128);
+    if (distance > 32) buffer->triggerInput (6, 128);
+    if (distance > 48) buffer->triggerInput (7, 128);
+    if (!(distance > 0)) buffer->triggerInput (8, 128);
+    if (!(distance > 1)) buffer->triggerInput (9, 128);
+    if (!(distance > 2)) buffer->triggerInput (10, 128);
+    if (!(distance > 4)) buffer->triggerInput (11, 128);
+    if (!(distance > 8)) buffer->triggerInput (12, 128);
+    if (!(distance > 16)) buffer->triggerInput (13, 128);
+    if (!(distance > 32)) buffer->triggerInput (14, 128);
+    if (!(distance > 48)) buffer->triggerInput (15, 128);
+
+    nanosAtLastUpdate = getNanos();
 }
 
 void mim_environment::motorCall(int i) {
@@ -342,7 +356,7 @@ void mim_environment::motorCall(int i) {
 
 void mim_environment::generateMaze () {
     // TODO: Generate maze i did not do this properly
-    bool dat[MAZE_SIZE][MAZE_SIZE] = {{1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
+    /*bool dat[MAZE_SIZE][MAZE_SIZE] = {{1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
                                       {1,0,0,0,0,0,1,0,0,1,0,0,1,1,0,1},
                                       {1,1,1,1,1,0,1,1,0,1,1,0,1,1,0,1},
                                       {1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,1},
@@ -358,19 +372,67 @@ void mim_environment::generateMaze () {
                                       {1,0,0,0,0,1,0,1,1,1,0,1,1,1,1,1},
                                       {1,0,1,1,0,0,0,0,0,0,0,1,1,1,1,1},
                                       {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1}};
-    for (int i = 0; i < MAZE_SIZE; i++)
-        for (int j = 0; j < MAZE_SIZE; j++)
-            mazeData[i][j] = dat[i][j];
-    entranceX = 1;
-    entranceY = 14;
-    exitX = 14;
-    exitY = 1;
+    */
+
+    for (int i = 0; i < MAZE_SIZE; i++) {
+        for (int j = 0; j < MAZE_SIZE; j++) {
+            mazeData[i][j] = true;
+        }
+    }
+    
+    int x = (rand () % (MAZE_SIZE - 2)) + 1;
+    int y = (rand () % (MAZE_SIZE - 2)) + 1;
+    int direction = rand () % 4;
+
+    for (int it = 0; it < MAZE_ITS; it++) {
+        int op = rand () % 6;
+        if (op == 4) {
+            direction++;
+            if (direction > 3) direction = 0;
+        } else if (op == 5) {
+            direction--;
+            if (direction < 0) direction = 3;
+        } else {
+            int nx = x;
+            int ny = y;
+            if (direction == 0) ny++;
+            if (direction == 1) nx++;
+            if (direction == 2) ny--;
+            if (direction == 3) nx--;
+            if (nx != 0 && nx != MAZE_SIZE-1 && ny != 0 && ny != MAZE_SIZE-1) {
+                x = nx;
+                y = ny;
+                mazeData[y][x] = false;
+            } else {
+                direction++;
+                if (direction > 3) direction = 0; 
+            }
+        }
+    }
+
+    // for (int i = 0; i < MAZE_SIZE; i++)
+    //     for (int j = 0; j < MAZE_SIZE; j++)
+    //         mazeData[i][j] = dat[i][j];
+
+    
+    entranceX = rand () % MAZE_SIZE;
+    entranceY = rand () % MAZE_SIZE;
+    while (mazeData[entranceY][entranceX]) {
+        entranceX = rand () % MAZE_SIZE;
+        entranceY = rand () % MAZE_SIZE;
+    }
+    exitX = rand () % MAZE_SIZE;
+    exitY = rand () % MAZE_SIZE;
+    while (mazeData[exitY][exitX] || (abs (exitY-entranceY) < 4) || abs (exitX-entranceX) < 4) {
+        exitX = rand () % MAZE_SIZE;
+        exitY = rand () % MAZE_SIZE;
+    }
 }
 
 // ===== MAIN =====
 int main () {
     long nanos = getNanos();
-    structurebuffer *sb = new structurebuffer ("nodes");
+    structurebuffer *sb = new structurebuffer ();
     long end = getNanos();
     float ms = (end-nanos)/1000000.0;
     cout << "I finished the maze!" << endl;

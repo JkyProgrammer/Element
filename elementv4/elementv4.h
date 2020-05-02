@@ -16,7 +16,7 @@ using namespace std;
 #define MAX_LINKS 8
 #define NUM_WORKER_THREADS 8
 #define WORKER_DELAY 10
-#define SENSOR_UPDATE_THRESHOLD 10
+#define SENSOR_UPDATE_THRESHOLD 15
 
 #define MIM_MODE // Set the node setup to be compatible with the mouse-in-maze environment
 
@@ -47,7 +47,7 @@ public:
 protected:
     unsigned char charge;			// The amount of charge hanging around in the structure
 	structurebuffer *buffer;
-	int motorNum = -1;
+	unsigned int motorNum = -1;
 };
 
 struct charge_i {
@@ -98,7 +98,7 @@ class environment {
 protected:
     structurebuffer *buffer;
 
-    thread *looper;
+    thread looper;
     void loop ();
 public:
     void motorCall (int);
@@ -106,7 +106,9 @@ public:
 };
 
 #ifdef MIM_MODE
-#define MAZE_SIZE 16
+#define MAZE_SIZE 64
+#define MAZE_ITS 500
+
 class mim_environment : public environment {
 private:
     int xPos, yPos;
