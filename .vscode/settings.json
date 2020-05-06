@@ -67,6 +67,7 @@
         "stack": "cpp",
         "thread": "cpp",
         "filesystem": "cpp",
-        "fstream": "cpp"
+        "fstream": "cpp",
+        "*.tcc": "cpp"
     }
 }
