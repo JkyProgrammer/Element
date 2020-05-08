@@ -3,13 +3,19 @@
 #include <math.h>
 #include <chrono>
 #include <thread>
+#include <time.h>
 
 #ifndef ELEMENT
 
 #define ELEMENT
 
-#define MAZE_SIZE 64
-#define MAZE_ITS 800
+#define MAZE_SIZE 32
+#define MAZE_ITS MAZE_SIZE*10
+
+#define VISION_RADIUS 2
+#define NUM_INPUTS (((VISION_RADIUS*2)+1) * ((VISION_RADIUS*2))+1) + 4
+#define NUM_OUTPUTS 4
+#define NUM_RELAYS 500
 
 using namespace std;
 
@@ -17,10 +23,9 @@ using namespace std;
 class Node {
 private:
     string operation = "";
-    vector<Node *>requirements;
 public:
     bool computedThisCycle;
-    char value;
+    unsigned char value;
 
     void compute ();
     Node (string);
@@ -28,12 +33,15 @@ public:
 
     void regenerateOperation ();
     void addInput (Node *, bool);
+
+    int numLinks ();
+    vector<Node *>requirements;
 };
 #pragma pack()
 
 vector<Node *> nodes;
-vector<Node *> inputs;
-vector<Node *> outputs;
+vector<Node *> sensors;
+vector<Node *> motors;
 
 
 #endif

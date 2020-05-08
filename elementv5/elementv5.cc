@@ -1,25 +1,19 @@
 #include "elementv5.h"
+
 bool hasOperationsLeft (string s) {
     for (char c : s) {
-        if (c == '+') return true;
+        if (c == '<') return true;
         if (c == '-') return true;
         if (c == '*') return true;
+        if (c == '>') return true;
         if (c == '/') return true;
-        if (c == '^') return true;
-        if (c == '%') return true;
-        if (c == '$') return true;
-        if (c == '!') return true;
     }
     return false;
 }
 
-int factorial(int n) { 
-    return (n==1 || n==0) ? 1: n * factorial(n - 1);  
-} 
-
 int evaluate (string s) {
     string fixed = s;
-
+    if (s.size () < 1) return 0;
     int result;
 
     int cl = 0;
@@ -39,9 +33,9 @@ int evaluate (string s) {
             }
             if (bracketDepth < 0) return rand();
         }
+        cl++;
     }
     if (bracketDepth != 0) return rand();
-
 
     while (hasOperationsLeft(fixed)) {
         string op1 = 0;
@@ -49,7 +43,7 @@ int evaluate (string s) {
         int operation = -1;
         cl = 0;
         while (cl < s.size()) {
-            if (fixed[cl] == '+') {
+            if (fixed[cl] == '<') {
                 if (operation != -1) break;
                 operation = 0;
             }
@@ -61,74 +55,59 @@ int evaluate (string s) {
                 if (operation != -1) break;
                 operation = 2;
             }
-            else if (fixed[cl] == '/') {
+            else if (fixed[cl] == '>') {
                 if (operation != -1) break;
                 operation = 3;
             }
-            else if (fixed[cl] == '^') {
+            else if (fixed[cl] == '/') {
                 if (operation != -1) break;
                 operation = 4;
             }
-            else if (fixed[cl] == '%') {
-                if (operation != -1) break;
-                operation = 5;
-            }
-            else if (fixed[cl] == '$') {
-                if (operation != -1) break;
-                operation = 6;
-            }
-            else if (fixed[cl] == '!') {
-                if (operation != -1) break;
-                operation = 7;
-            }
             else {
                 if (operation == -1) op1 += fixed[cl];
-                else if (operation == 7 || operation == 6) break;
+                else if (operation == 4) break;
                 else op2 += fixed[cl];
             }
         }
         if (operation == 0) {
-            fixed.replace (0, cl-1, to_string (stoi (op1) + stoi (op2)));
+            fixed.replace (0, cl-1, to_string ( (stoi (op1) < stoi (op2))*255 ));
         } else if (operation == 1) {
-            fixed.replace (0, cl-1, to_string (stoi (op1) - stoi (op2)));
+            fixed.replace (0, cl-1, to_string ( abs (stoi (op1) - stoi (op2)) ));
         } else if (operation == 2) {
-            fixed.replace (0, cl-1, to_string (stoi (op1) * stoi (op2)));
+            fixed.replace (0, cl-1, to_string ( (stoi (op1) + stoi (op2))/2 ));
         } else if (operation == 3) {
-            fixed.replace (0, cl-1, to_string (stoi (op1) / stoi (op2)));
+            fixed.replace (0, cl-1, to_string ( (stoi (op1) > stoi (op2))*255 ));
         } else if (operation == 4) {
-            fixed.replace (0, cl-1, to_string (pow(stoi (op1), stoi (op2))));
-        } else if (operation == 5) {
-            fixed.replace (0, cl-1, to_string (stoi (op1) % stoi (op2)));
-        } else if (operation == 6) {
-            fixed.replace (0, cl-1, to_string (sin (stoi (op1)*M_PI/180)));
-        } else if (operation == 7) {
-            fixed.replace (0, cl-1, to_string (factorial (stoi (op1))));
+            fixed.replace (0, cl-1, to_string ( stoi (op1) / 2 ));
         }
     }
-
     return stoi (fixed);
 }
 
 void Node::compute() {
-    vector<char> input;
+    if (operation.size() < 1) { value = 0; return; }
+    vector<unsigned char> input;
     int inputN = -1;
+    cout << "Requirements: " << endl;
     for (Node *req : requirements) {
         inputN++;
         if (!req->computedThisCycle) req->compute();
         input.push_back(req->value);
+        cout << to_string (req->value) << endl;
     }
     string str = operation;
     for (char c = 'a'; c <= 'z'; c++) {
         if (c-'a' >= input.size()) break;
         size_t s = str.find(c);
-        if (s < 0) continue;
-        str.replace (s, s, to_string(input[c-'a']));
+        if (s == string::npos) continue;
+        str.replace (s, s-1, to_string(input[c-'a']));
     }
     string sstr = "";
     for (char c : str) {
         if (c != ' ') sstr += c;
     }
     value = evaluate (str);
+    cout << to_string(value) << endl;
     computedThisCycle = true;
 }
 
@@ -151,19 +130,30 @@ void clearComputedFlags () {
 
 void Node::regenerateOperation () {
     int numInputs = requirements.size();
-
+    if (numInputs < 1) return;
     string oper;
 
-    int n = 8;
-    if (numInputs > 1) n = 6;
-    int op = rand () % n;
-
-    for (int i = 0; i < numInputs-1; i++) {
-        oper += ('a' + i);
-        oper += to_string(op);
+    char ops[8] = {'<', '-', '*', '>', '/'};
+    if (numInputs == 1) {
+        if (rand() % 2) {
+            oper = "a/";
+        } else {
+            oper = "a";
+        }
+    } else {
+        for (int i = 0; i < numInputs-1; i++) {
+            int op = rand () % 4;
+            oper += ('a' + i);
+            oper += ops[op];
+        }
+        oper += ('a'+(numInputs-1));
+        int final = rand() % 3;
+        if (final == 0) {
+            oper += '/';
+        }
     }
-
     operation = oper;
+    cout << operation << endl;
     operation.shrink_to_fit();
 }
 
@@ -174,47 +164,77 @@ void Node::addInput (Node *n, bool regen) {
     if (regen) regenerateOperation();
 }
 
-// void generateNodes () {
-//     cout << "Generated node pattern..." << endl;
-//     buffer.clear();
-//     sensors.clear();
-//     motors.clear();
-//     for (int i = 0; i < NUM_INPUTS; i++) {
-//         structure *s = new structure (this);
-//         buffer.push_back (s);
-//         sensors.push_back (s);
-//     }
+int Node::numLinks () {
+    return requirements.size();
+}
 
-//     for (int i = 0; i < NUM_OUTPUTS; i++) {
-//         structure *s = new structure (this, i);
-//         buffer.push_back (s);
-//         motors.push_back (s);
-//     }
+void generateNodes () {
+    cout << "Generated node pattern..." << endl;
+    nodes.clear();
+    sensors.clear();
+    motors.clear();
+    
+    for (int i = 0; i < NUM_OUTPUTS; i++) {
+        Node *n = new Node ();
+        nodes.push_back (n);
+        motors.push_back (n);
+    }
 
-//     for (int i,o = 0; i < NUM_INPUTS; i++) {
-//         if (o == motors.size()) o = 0;
-//         sensors[i]->addLink (motors[o]);
-//     }
+    for (int i = 0; i < NUM_INPUTS; i++) {
+        Node *n = new Node ();
+        nodes.push_back (n);
+        sensors.push_back (n);
+    }
 
-//     int numRelays = 0;
-//     while (numRelays <= NUM_RELAYS) {
-//         structure *o = buffer[rand() % buffer.size()];
-//         if (o->isMotor()) continue;
-//         int num = o->numLinks() > 0;
-//         if (num) {
-//             int connectionNum = rand () % o->numLinks();
-//             structure *r = new structure (this);
-//             r->addLink (o->links[connectionNum]);
-//             o->links[connectionNum] = r;
-//         }
-//         if (!(rand() % 3)) {
-//             o->addLink (buffer[(rand() % buffer.size()-(1 + NUM_INPUTS)) + NUM_INPUTS]);
-//         }
-//         numRelays++;
-//     }
-//     cout << "Done." << endl;
-// }
+    int numInLayer = NUM_INPUTS;
+    vector<Node *> lastLayer = sensors;
+    vector<Node *> nextLayer;
+    while (numInLayer > 2*NUM_OUTPUTS) {
+        for (int i = 0; i < numInLayer; i+=2) {
+            Node *n = new Node ();
+            n->addInput (lastLayer[i], false);
+            if (i+1 < lastLayer.size())
+                n->addInput (lastLayer[i+1], true);
+            nodes.push_back(n);
+            nextLayer.push_back(n);
+        }
+        numInLayer = nextLayer.size();
+        lastLayer = nextLayer;
+        nextLayer.clear();
+    }
 
+    for (int i,o = 0; i < numInLayer; i++) {
+        if (o == motors.size()) o = 0;
+        motors[o]->addInput (lastLayer[i], false);
+    }
+
+    for (int o = 0; o < NUM_OUTPUTS; o++) {
+        motors[o]->regenerateOperation();
+    }
+
+    /*
+    int numRelays = 0;
+    while (numRelays <= NUM_RELAYS) {
+        Node *o = nodes[rand() % nodes.size()];
+        int num = o->numLinks() > 0;
+        if (num) {
+            int connectionNum = rand () % num;
+            Node *r = new Node ();
+            r->addInput (o->requirements[connectionNum], true);
+            o->requirements[connectionNum] = r;
+        }
+        if (!(rand() % 3)) {
+            Node *target = nodes[(rand() % nodes.size()-(1 + NUM_OUTPUTS)) + NUM_OUTPUTS];
+            if (target != o) {
+                o->addInput (target, true);
+            }
+        }
+
+        numRelays++;
+    }
+    */
+    cout << "Done." << endl;
+}
 
 bool mazeData[MAZE_SIZE][MAZE_SIZE] = {false};
 int entranceX, entranceY, exitX, exitY;
@@ -284,19 +304,68 @@ void displayMaze () {
     }
 }
 
-// TODO: Maze overview behaviour training
+void updateNet () {
+    int a = 0;
+    int b = 0;
+    for (int i = yPos-VISION_RADIUS; i < yPos+VISION_RADIUS; i++) {
+        if (i < 0 || i >= MAZE_SIZE) continue;
+        for (int j = xPos-VISION_RADIUS; j < xPos+VISION_RADIUS; j++) {
+            if (j < 0 || j >= MAZE_SIZE) continue;
+            unsigned char val = 0;
+            if (mazeData[i][j]) val = 254;
+            if (i == yPos && j == xPos) val = 64;
+            if (i == exitY && j == exitX) val = 128;
+            Node *s = sensors[(a*VISION_RADIUS*2) + b];
+            s->value = val;
+            s->computedThisCycle = true;
+            cout << "Looked at " << to_string (j) << " " << to_string(i) << endl;
+            cout << "Assigned " << to_string(s->value) << " to node at " << to_string(b) << " " << to_string(a) << endl;
+            b++;
+        }
+        a++;
+        b = 0;
+    }
+
+    for (int i = 0; i < 4; i++) {
+        sensors[(VISION_RADIUS*VISION_RADIUS)+i]->value = rand () % 256;
+        sensors[(VISION_RADIUS*VISION_RADIUS)+i]->computedThisCycle = true;
+    }
+
+    int vals[NUM_OUTPUTS] = {0};
+
+    for (int o = 0; o < NUM_OUTPUTS; o++) {
+        cout << "Computing motor " << o << endl;
+        motors[o]->compute();
+        vals[o] = motors[o]->value;
+        cout << "Val: " << vals[0] << endl;
+        cout << "Done." << endl;
+
+    }
+
+    // Calculate motion direction
+    int totalWeight = vals[0] + vals[1] + vals[2] + vals[3];
+    if (totalWeight == 0) return;
+    int x = ((1 * (vals[0]/totalWeight)) + (1 * (vals[1]/totalWeight)) + (-1 * (vals[2]/totalWeight)) + (-1 * (vals[3]/totalWeight)))/4;
+    int y = ((1 * (vals[0]/totalWeight)) + (-1 * (vals[1]/totalWeight)) + (1 * (vals[2]/totalWeight)) + (-1 * (vals[3]/totalWeight)))/4;
+    xPos += x;
+    yPos += y;
+    cout << x << endl;
+    cout << y << endl;
+}
+
 
 int main() {
+    srand (time(NULL));
     generateMaze();
     xPos = entranceX;
     yPos = entranceY;
 
-    // TODO: GEnerate nodes
-    //generateNodes();
-    
-    chrono::milliseconds timespan(1000); // or whatever
+    generateNodes();
+    chrono::milliseconds timespan(100);
 
-    while (true) {
+    while (xPos != exitX || yPos != exitY) {
+        clearComputedFlags();
+        updateNet();
         displayMaze();
         this_thread::sleep_for(timespan);
     }
