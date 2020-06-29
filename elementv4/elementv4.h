@@ -13,17 +13,19 @@ using namespace std;
 #define ELEMENT
 
 #define THRESHOLD 10
-#define MAX_LINKS 8
+#define MAX_LINKS 16
 #define NUM_WORKER_THREADS 8
-#define WORKER_DELAY 10
+#define WORKER_DELAY 1
 #define SENSOR_UPDATE_THRESHOLD 15
 
 #define MIM_MODE // Set the node setup to be compatible with the mouse-in-maze environment
+//#define FEXP_MODE // Set the node setup to be compatible with file exploration environment
+
 
 #ifdef MIM_MODE
-#define NUM_INPUTS 16
+#define NUM_INPUTS 18
 #define NUM_OUTPUTS 4
-#define NUM_RELAYS 500
+#define NUM_RELAYS 20
 #endif
 
 class structurebuffer;
@@ -124,6 +126,8 @@ private:
     void loop ();
 
     long long nanosAtLastUpdate;
+
+    bool tmp;
 public:
     mim_environment (structurebuffer *);
     void motorCall (int);
