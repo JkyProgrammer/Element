@@ -26,9 +26,11 @@ void structure::call (int i) {
         }
         return;
     }
-    if (i > THRESHOLD) {
+    if (i+charge > THRESHOLD) {
         int n = numLinks();
+        if (!n) return;
         int chargePerLink = (i + charge)/n;
+        charge = 0;
         for (structure *s : links) {
             if (s == NULL) break;
             buffer->queueLock.lock();
@@ -40,7 +42,7 @@ void structure::call (int i) {
             buffer->queueLock.unlock();
         }
     } else {
-        charge = i;
+        charge += i;
     }
 }
 void structure::setLinks (structure *ls[MAX_LINKS]) {
@@ -281,6 +283,9 @@ void mim_environment::start () {
 }
 void mim_environment::loop () {
     while (true) {
+        buffer->triggerInput (16, 128);
+        if (tmp) buffer->triggerInput (17, 128);
+        tmp = !tmp;
         if (getNanos() - nanosAtLastUpdate > SENSOR_UPDATE_THRESHOLD)
             sensorUpdate();
     }
@@ -355,7 +360,6 @@ void mim_environment::motorCall(int i) {
 }
 
 void mim_environment::generateMaze () {
-    // TODO: Generate maze i did not do this properly
     /*bool dat[MAZE_SIZE][MAZE_SIZE] = {{1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
                                       {1,0,0,0,0,0,1,0,0,1,0,0,1,1,0,1},
                                       {1,1,1,1,1,0,1,1,0,1,1,0,1,1,0,1},
@@ -440,3 +444,7 @@ int main () {
     return 0;
 }
 // TODO: Add comments
+// TODO: Connection strengths probability
+// TODO: Mutation
+
+// TODO: Simpler interface : file system nav
